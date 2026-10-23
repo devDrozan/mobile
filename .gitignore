@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+# Local configuration and verification artifacts
+.env
+.env.*
+!.env.example
+coverage/
+dist/

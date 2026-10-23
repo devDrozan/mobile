@@ -1,3 +1,7 @@
+# Mobile guidance
+
+Follow the workspace [AGENTS.md](../AGENTS.md) when working in the full workspace. This file adds mobile-specific guidance. Current product behavior belongs in the workspace [SPEC.md](../SPEC.md); setup and usage belong in this project's [README.md](README.md).
+
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
 ## Expo has changed — do not trust your training data
