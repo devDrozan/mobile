@@ -140,6 +140,7 @@
   "update": "An updated app is ready. Your current entries will remain until you choose to reload.",
   "reload": "Reload app",
   "language": "Language",
+  "settings": "Settings",
   "appearance": "Appearance",
   "themeSystem": "System",
   "themeLight": "Light",

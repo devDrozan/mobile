@@ -1,18 +1,17 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Button, Text, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import i18n from '../src/i18n';
 import { AppThemeProvider, useAppTheme } from '../src/theme';
 import { darkColors, lightColors } from '../src/theme-colors';
-import { AboutContent } from '../src/components/AboutContent';
 import { Header } from '../src/components/ui';
 import AboutScreen from '../src/app/about';
 import { CalculatorSessionProvider } from '../src/calculator-session';
 import CalculatorScreen from '../src/app/index';
 import { getContext, type Context } from '../src/api/client';
 
-jest.mock('expo-router', () => ({ usePathname: () => '/', router: { navigate: jest.fn() } }));
+jest.mock('expo-router', () => ({ usePathname: jest.fn(() => '/'), router: { navigate: jest.fn() } }));
 jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('../src/api/client', () => ({
@@ -33,6 +32,7 @@ function ThemeProbe() {
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
+  jest.mocked(usePathname).mockReturnValue('/');
   jest.mocked(useColorScheme).mockReturnValue('light');
   await act(() => i18n.changeLanguage('en'));
 });
@@ -73,40 +73,88 @@ it('ignores invalid saved values and still changes appearance when storage fails
   expect(screen.getByTestId('appearance')).toHaveTextContent('dark/dark');
 });
 
-it('opens the appearance controls, marks the current choice and applies a selected mode', async () => {
+it.each(['en', 'my'])('collapses preferences under the localized settings control in %s', async language => {
+  await act(() => i18n.changeLanguage(language));
   await render(<AppThemeProvider><Header /></AppThemeProvider>);
-  const toggle = screen.getByRole('button', { name: 'Appearance: System' });
+  const toggle = screen.getByRole('button', { name: i18n.t('settings') });
   expect(toggle).not.toBeExpanded();
-  await fireEvent.press(toggle);
-  expect(screen.getByRole('radio', { name: 'System' })).toBeChecked();
-  await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));
-  expect(screen.getByRole('button', { name: 'Appearance: Dark' })).not.toBeExpanded();
   expect(screen.queryByRole('radio')).toBeNull();
+  expect(screen.queryByRole('button', { name: i18n.t('about') })).toBeNull();
+  await fireEvent.press(toggle);
+  expect(toggle).toBeExpanded();
+  expect(screen.getByRole('radio', { name: language === 'en' ? 'English' : 'မြန်မာ' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: i18n.t('themeSystem') })).toBeChecked();
+  await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeDark') }));
+  expect(screen.getByRole('radio', { name: i18n.t('themeDark') })).toBeChecked();
+  expect(toggle).toBeExpanded();
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'dark');
+  await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeLight') }));
+  expect(screen.getByRole('radio', { name: i18n.t('themeLight') })).toBeChecked();
+  await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeSystem') }));
+  expect(screen.getByRole('radio', { name: i18n.t('themeSystem') })).toBeChecked();
+  await fireEvent.press(toggle);
+  expect(toggle).not.toBeExpanded();
+  expect(screen.queryByRole('radio')).toBeNull();
+  expect(screen.queryByRole('button', { name: i18n.t('about') })).toBeNull();
 });
 
-it('retains the current wage draft and step through theme changes and About navigation', async () => {
+it('closes settings when opening a primary tab or About', async () => {
+  await render(<AppThemeProvider><Header /></AppThemeProvider>);
+  const toggle = screen.getByRole('button', { name: 'Settings' });
+  await fireEvent.press(toggle);
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('guide') }));
+  expect(router.navigate).toHaveBeenCalledWith('/guide');
+  expect(toggle).not.toBeExpanded();
+  await fireEvent.press(toggle);
+  await fireEvent.press(screen.getByRole('button', { name: 'About' }));
+  expect(router.navigate).toHaveBeenCalledWith('/about');
+  expect(toggle).not.toBeExpanded();
+});
+
+it('closes settings when navigation happens outside the header', async () => {
+  jest.mocked(usePathname).mockReturnValue('/about');
+  const tree = () => <AppThemeProvider><Header /></AppThemeProvider>;
+  const view = await render(tree());
+  await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
+  expect(screen.getByRole('button', { name: 'Settings' })).toBeExpanded();
+  jest.mocked(usePathname).mockReturnValue('/');
+  await view.rerender(tree());
+  expect(screen.getByRole('button', { name: 'Settings' })).not.toBeExpanded();
+  expect(screen.queryByRole('radio')).toBeNull();
+});
+
+it('retains the current wage draft and step through settings, language changes and About navigation', async () => {
   const context: Context = {
     method: 'normal', retirementDate: '2017-09-16', employmentDays: 1080, lookbackStart: '2017-06-16', lookbackDays: 92,
     eligibility: { status: 'eligible', reasons: [] },
     wagePeriods: [{ startDate: '2017-06-16', endDate: '2017-06-30', days: 15 }], dcPeriods: [],
   };
   jest.mocked(getContext).mockResolvedValue(context);
-  const route = (calculator: boolean) => <AppThemeProvider><CalculatorSessionProvider><ThemeProbe />{calculator ? <CalculatorScreen /> : <AboutContent />}</CalculatorSessionProvider></AppThemeProvider>;
+  const route = (calculator: boolean) => <AppThemeProvider><CalculatorSessionProvider><Header />{calculator ? <CalculatorScreen /> : <AboutScreen />}</CalculatorSessionProvider></AppThemeProvider>;
   const view = await render(route(true));
   await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
   await fireEvent.changeText(screen.getByLabelText('Base pay'), '123456.789012');
-  await fireEvent.press(screen.getByRole('button', { name: 'Use dark' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
+  await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));
   expect(screen.getByLabelText('Base pay')).toHaveDisplayValue('123456.789012');
+  await fireEvent.press(screen.getByRole('radio', { name: 'မြန်မာ' }));
+  expect(screen.getByRole('button', { name: i18n.t('settings') })).toBeExpanded();
+  expect(screen.getByLabelText(i18n.t('basePay'))).toHaveDisplayValue('123456.789012');
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('about') }));
+  expect(router.navigate).toHaveBeenCalledWith('/about');
   await view.rerender(route(false));
-  expect(screen.getByText('Created by devrozan')).toBeOnTheScreen();
-  await fireEvent.press(screen.getByRole('button', { name: 'Use light' }));
+  expect(screen.getByText(i18n.t('aboutCreator'))).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('settings') }));
+  await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeLight') }));
+  await fireEvent.press(screen.getByRole('radio', { name: 'English' }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('returnCalculator') }));
   await view.rerender(route(true));
   expect(screen.getByLabelText('Base pay')).toHaveDisplayValue('123456.789012');
   expect(getContext).toHaveBeenCalledTimes(1);
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'dark');
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'light');
-  expect(jest.mocked(AsyncStorage.setItem).mock.calls.every(([key]) => key === 'e9-theme')).toBe(true);
+  expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-language', 'my');
+  expect(jest.mocked(AsyncStorage.setItem).mock.calls.every(([key]) => ['e9-theme', 'e9-language'].includes(key))).toBe(true);
 });
 
 it.each(['en', 'my'])('shows the approved About content, copyright and return action in %s', async language => {

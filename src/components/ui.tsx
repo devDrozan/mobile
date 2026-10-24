@@ -45,22 +45,47 @@ function CopyrightFooter() {
   return <View style={styles.footer}><Copy style={[styles.help, { textAlign: 'center' }]}>{t('copyright', { year: new Date().getFullYear(), creator: 'devrozan' })}</Copy></View>;
 }
 export function Header() {
+  const path = usePathname();
+  return <HeaderContent key={path} path={path} />;
+}
+function HeaderContent({ path }: { path: string }) {
   const { t, i18n } = useTranslation();
   const { colors, styles } = useUi();
   const { mode, setMode } = useAppTheme();
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
-  const appearanceToggle = useRef<ComponentRef<typeof View>>(null);
-  const path = usePathname();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsToggle = useRef<ComponentRef<typeof View>>(null);
   const tabs = [{ path: '/' as const, label: 'calculator' }, { path: '/guide' as const, label: 'guide' }, { path: '/insurance' as const, label: 'insurance' }];
   const modeLabels = { system: 'themeSystem', light: 'themeLight', dark: 'themeDark' } as const;
+  function closeSettings(restoreFocus = false) {
+    setSettingsOpen(false);
+    if (restoreFocus) requestAnimationFrame(() => {
+      const target = settingsToggle.current;
+      target?.focus();
+      if (target && Platform.OS !== 'web') AccessibilityInfo.sendAccessibilityEvent(target, 'focus');
+    });
+  }
   return <View style={styles.header}>
-    <View style={styles.brandRow}><View style={styles.mark}><Copy style={styles.markText}>₩</Copy></View><Copy style={styles.brand}>{t('appName')}</Copy><View style={styles.language}>{(['en', 'my'] as const).map(l => <Pressable key={l} accessibilityRole="button" accessibilityLabel={l === 'en' ? 'English' : 'မြန်မာ'} accessibilityState={{ selected: i18n.resolvedLanguage === l }} onPress={() => void changeLanguage(l)} style={[styles.languageButton, i18n.resolvedLanguage === l && { backgroundColor: colors.selected }]}><Copy style={{ fontSize: 11 }}>{l === 'en' ? 'EN' : 'မြန်မာ'}</Copy></Pressable>)}</View></View>
-    <View style={styles.tabs}>{tabs.map(tab => <Pressable key={tab.path} accessibilityRole="button" accessibilityState={{ selected: path === tab.path }} onPress={() => { setAppearanceOpen(false); if (path !== tab.path) router.navigate(tab.path); }} style={[styles.tab, path === tab.path && { borderBottomColor: colors.selectedBorder }]}><Copy style={[styles.tabText, path === tab.path && { color: colors.primary }]}>{t(tab.label)}</Copy></Pressable>)}</View>
-    <View style={styles.utilities}>
-      <Pressable accessibilityRole="button" accessibilityState={{ selected: path === '/about' }} onPress={() => { setAppearanceOpen(false); if (path !== '/about') router.navigate('/about'); }} style={[styles.utilityButton, path === '/about' && { backgroundColor: colors.selected }]}><Copy style={styles.utilityText}>{t('about')}</Copy></Pressable>
-      <Pressable ref={appearanceToggle} accessibilityRole="button" accessibilityLabel={`${t('appearance')}: ${t(modeLabels[mode])}`} accessibilityState={{ expanded: appearanceOpen }} onPress={() => setAppearanceOpen(open => !open)} style={[styles.utilityButton, { flex: 1 }, appearanceOpen && { backgroundColor: colors.selected }]}><Copy style={styles.utilityText}>{t('appearance')} · {t(modeLabels[mode])} {appearanceOpen ? '⌃' : '⌄'}</Copy></Pressable>
+    <View style={styles.brandRow}>
+      <View style={styles.mark}><Copy style={styles.markText}>₩</Copy></View><Copy style={styles.brand}>{t('appName')}</Copy>
+      <Pressable ref={settingsToggle} accessibilityRole="button" accessibilityLabel={t('settings')} accessibilityState={{ expanded: settingsOpen }} aria-expanded={settingsOpen} onPress={() => settingsOpen ? closeSettings(true) : setSettingsOpen(true)} style={({ pressed }) => [styles.settingsToggle, settingsOpen && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><Text accessible={false} style={styles.settingsIcon}>⚙︎</Text></Pressable>
     </View>
-    {appearanceOpen && <View accessibilityRole="radiogroup" accessibilityLabel={t('appearance')} style={styles.appearanceOptions}>{(['system', 'light', 'dark'] as const).map(nextMode => <Pressable key={nextMode} accessibilityRole="radio" accessibilityLabel={t(modeLabels[nextMode])} accessibilityState={{ checked: mode === nextMode }} aria-checked={mode === nextMode} onPress={() => { setMode(nextMode); setAppearanceOpen(false); requestAnimationFrame(() => { const target = appearanceToggle.current; target?.focus(); if (target && Platform.OS !== 'web') AccessibilityInfo.sendAccessibilityEvent(target, 'focus'); }); }} style={[styles.appearanceOption, mode === nextMode && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.utilityText}>{mode === nextMode ? '✓ ' : ''}{t(modeLabels[nextMode])}</Copy></Pressable>)}</View>}
+    <View style={styles.tabs}>{tabs.map(tab => <Pressable key={tab.path} accessibilityRole="button" accessibilityState={{ selected: path === tab.path }} onPress={() => { closeSettings(); if (path !== tab.path) router.navigate(tab.path); }} style={[styles.tab, path === tab.path && { borderBottomColor: colors.selectedBorder }]}><Copy style={[styles.tabText, path === tab.path && { color: colors.primary }]}>{t(tab.label)}</Copy></Pressable>)}</View>
+    {settingsOpen && <ScrollView style={styles.settingsPanel} contentContainerStyle={styles.settingsContent} keyboardShouldPersistTaps="handled" onAccessibilityEscape={() => closeSettings(true)}>
+      <Copy accessibilityRole="header" style={styles.smallHeading}>{t('settings')}</Copy>
+      <View style={styles.settingsSection}>
+        <Copy style={styles.label}>{t('language')}</Copy>
+        <View accessibilityRole="radiogroup" accessibilityLabel={t('language')} style={styles.settingsOptions}>{(['en', 'my'] as const).map(language => {
+          const checked = i18n.resolvedLanguage === language;
+          const label = language === 'en' ? 'English' : 'မြန်မာ';
+          return <Pressable key={language} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ checked }} aria-checked={checked} onPress={() => void changeLanguage(language)} style={[styles.settingsOption, checked && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.settingsOptionText}>{checked ? '✓ ' : ''}{label}</Copy></Pressable>;
+        })}</View>
+      </View>
+      <View style={styles.settingsSection}>
+        <Copy style={styles.label}>{t('appearance')}</Copy>
+        <View accessibilityRole="radiogroup" accessibilityLabel={t('appearance')} style={styles.settingsOptions}>{(['system', 'light', 'dark'] as const).map(nextMode => <Pressable key={nextMode} accessibilityRole="radio" accessibilityLabel={t(modeLabels[nextMode])} accessibilityState={{ checked: mode === nextMode }} aria-checked={mode === nextMode} onPress={() => setMode(nextMode)} style={[styles.settingsOption, mode === nextMode && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.settingsOptionText}>{mode === nextMode ? '✓ ' : ''}{t(modeLabels[nextMode])}</Copy></Pressable>)}</View>
+      </View>
+      <Button title={t('about')} secondary onPress={() => { closeSettings(path === '/about'); if (path !== '/about') router.navigate('/about'); }} />
+    </ScrollView>}
   </View>;
 }
 function createStyles(colors: ThemeColors) { return StyleSheet.create({
@@ -72,16 +97,17 @@ function createStyles(colors: ThemeColors) { return StyleSheet.create({
   mark: { backgroundColor: colors.brandBackground, width: 33, height: 35, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
   markText: { color: colors.brandText, fontSize: 23, lineHeight: 33 },
   brand: { fontSize: 13, fontFamily: 'NotoSansMyanmar_600SemiBold', flex: 1, lineHeight: 26 },
-  language: { flexDirection: 'row', borderWidth: 1, borderColor: colors.border, borderRadius: 7, padding: 3 },
-  languageButton: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: 5, minHeight: 44, minWidth: 36, justifyContent: 'center', alignItems: 'center' },
+  settingsToggle: { width: 44, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  settingsIcon: { fontSize: 25, lineHeight: 32, color: colors.primary },
   tabs: { flexDirection: 'row', paddingHorizontal: 14, gap: 12 },
   tab: { flex: 1, minHeight: 44, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: 'transparent', justifyContent: 'center' },
   tabText: { fontSize: 11, lineHeight: 22, textAlign: 'center', color: colors.muted },
-  utilities: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingVertical: 5 },
-  utilityButton: { minHeight: 44, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, justifyContent: 'center' },
-  utilityText: { fontSize: 11, lineHeight: 23, color: colors.primary, textAlign: 'center' },
-  appearanceOptions: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingBottom: 12 },
-  appearanceOption: { flex: 1, minHeight: 48, padding: 8, justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 7 },
+  settingsPanel: { maxHeight: 330, flexGrow: 0, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surfaceSubtle },
+  settingsContent: { padding: 16, gap: 16, maxWidth: 650, width: '100%', alignSelf: 'center' },
+  settingsSection: { gap: 6 },
+  settingsOptions: { flexDirection: 'row', gap: 8 },
+  settingsOption: { flex: 1, minHeight: 48, padding: 8, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 7 },
+  settingsOptionText: { fontSize: 13, lineHeight: 28, color: colors.primary, textAlign: 'center' },
   eyebrow: { fontSize: 10, letterSpacing: .8, color: colors.muted, lineHeight: 23 },
   title: { fontSize: 29, lineHeight: 46, letterSpacing: -.6, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },
   burmeseTitle: { fontSize: 26, lineHeight: 46, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },
