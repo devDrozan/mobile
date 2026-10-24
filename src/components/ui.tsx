@@ -7,7 +7,7 @@ import { changeLanguage } from '../i18n';
 export const colors = { green: '#123c35', text: '#243b35', muted: '#68795f', border: '#dfe7d7', background: '#f7f8f4', lime: '#d5eab5' };
 export function Copy({ style, ...props }: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) { return <Text {...props} style={[styles.copy, style]} />; }
 export function Button({ title, onPress, secondary = false, busy = false, disabled = false }: { title: string; onPress: () => void; secondary?: boolean; busy?: boolean; disabled?: boolean }) {
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || busy, busy }} onPress={onPress} disabled={disabled || busy} style={({ pressed }) => [styles.button, secondary && styles.secondary, (pressed || disabled || busy) && { opacity: .55 }]}>{busy ? <ActivityIndicator color={secondary ? colors.green : '#fff'} /> : <Copy style={[styles.buttonText, secondary && { color: colors.green }]}>{title}</Copy>}</Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy, busy }} onPress={onPress} disabled={disabled || busy} style={({ pressed }) => [styles.button, secondary && styles.secondary, (pressed || disabled || busy) && { opacity: .55 }]}>{busy && <ActivityIndicator accessible={false} color={secondary ? colors.green : '#fff'} />}<Copy style={[styles.buttonText, secondary && { color: colors.green }]}>{title}</Copy></Pressable>;
 }
 export function Field({ label, help, error, id, ref, ...props }: TextInputProps & { label: string; help?: string; error?: string; id?: string; ref?: Ref<ComponentRef<typeof TextInput>> }) {
   const descriptions = [help && `${id}-help`, error && `${id}-error`].filter(Boolean).join(' ');
@@ -48,9 +48,9 @@ export const styles = StyleSheet.create({
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d9e2d0', borderRadius: 8, paddingHorizontal: 13, paddingVertical: 11, minHeight: 48, fontSize: 15, color: colors.text, fontFamily: 'NotoSansMyanmar_400Regular' },
   help: { fontSize: 11, lineHeight: 23, color: colors.muted }, error: { fontSize: 12, lineHeight: 24, color: '#a45d45' },
   errorBox: { backgroundColor: '#fcf2ec', borderWidth: 1, borderColor: '#e9d7cb', borderRadius: 8, padding: 13 },
-  button: { paddingHorizontal: 18, paddingVertical: 13, minHeight: 49, borderRadius: 8, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
+  button: { paddingHorizontal: 18, paddingVertical: 13, minHeight: 49, borderRadius: 8, backgroundColor: colors.green, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   secondary: { backgroundColor: '#edf3e5', borderWidth: 1, borderColor: '#dce6d0' },
-  buttonText: { color: '#fff', fontSize: 13, lineHeight: 26, textAlign: 'center' },
+  buttonText: { color: '#fff', fontSize: 13, lineHeight: 26, textAlign: 'center', flexShrink: 1 },
   row: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   divider: { height: 1, backgroundColor: '#e9eee2' },
   note: { padding: 15, backgroundColor: '#eff4e6', borderRadius: 8, gap: 5 },

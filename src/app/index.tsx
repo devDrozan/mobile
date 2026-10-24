@@ -1,40 +1,30 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentRef } from 'react';
 import { AccessibilityInfo, Keyboard, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
-import { Controller, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
-import { ApiFailure, calculate, getContext, type Context, type ContextInput, type Calculation, type CalculationInput } from '../api/client';
-import { employmentSchema, type EmploymentValues, dateLabel, inputMoney } from '../validation';
-import { apiMoneyField, reconcileWages, reconcileYears, validateWages, type WageRow, type YearRow, type FieldErrors } from '../calculator-draft';
+import { ApiFailure, calculate, getContext, type ContextInput, type CalculationInput } from '../api/client';
+import { type EmploymentValues, dateLabel, inputMoney } from '../validation';
+import { apiMoneyField, reconcileWages, reconcileYears, validateWages, type FieldErrors } from '../calculator-draft';
+import { blankEmployment, useCalculatorSession } from '../calculator-session';
 import { colors, Button, Copy, Field, MoneyField, Screen, styles } from '../components/ui';
 import { Result, SummaryRow } from '../components/Result';
 import { Sources } from '../components/InfoContent';
 
 type Method = ContextInput['method'];
-const blank: EmploymentValues = { startDate: '', lastWorkingDate: '', weeklyHours: 40, hasSpecialCircumstances: false };
 const sample: EmploymentValues = { startDate: '2014-10-02', lastWorkingDate: '2017-09-15', weeklyHours: 40, hasSpecialCircumstances: false };
 
 export default function CalculatorScreen() {
   const { t, i18n } = useTranslation();
-  const form = useForm<EmploymentValues>({ resolver: zodResolver(employmentSchema), defaultValues: blank });
-  const [method, setMethod] = useState<Method>('normal');
-  const [step, setStep] = useState(0);
-  const [context, setContext] = useState<Context>();
-  const [result, setResult] = useState<Calculation>();
-  const [wages, setWages] = useState<WageRow[]>([]);
-  const [years, setYears] = useState<YearRow[]>([]);
-  const [bonus, setBonus] = useState('0');
-  const [leave, setLeave] = useState('0');
-  const [ordinary, setOrdinary] = useState('');
-  const [balance, setBalance] = useState('');
-  const [balanceDate, setBalanceDate] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [periodsChanged, setPeriodsChanged] = useState(false);
+  const {
+    form, weeklyHoursText, setWeeklyHoursText, resetEmployment,
+    method, setMethod, step, setStep, context, setContext, result, setResult,
+    wages, setWages, years, setYears, bonus, setBonus, leave, setLeave,
+    ordinary, setOrdinary, balance, setBalance, balanceDate, setBalanceDate,
+    busy, setBusy, error, setError, fieldErrors, setFieldErrors,
+    periodsChanged, setPeriodsChanged, draftContextRef,
+  } = useCalculatorSession();
   const [attention, setAttention] = useState<{ target: string }>();
-  const draftContext = useRef<Context>(undefined);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const content = useRef<ComponentRef<typeof View>>(null);
   const heading = useRef<ComponentRef<typeof Text>>(null);
@@ -72,7 +62,7 @@ export default function CalculatorScreen() {
     return { id, ref: (value: ComponentRef<typeof TextInput> | null) => { registerInput(id, value); }, error: fieldErrors[id] ? t(fieldErrors[id]) : undefined };
   }
   function reset(next: Method) {
-    setMethod(next); goToStep(0); setContext(undefined); draftContext.current = undefined; setResult(undefined); setError(''); setFieldErrors({}); setPeriodsChanged(false);
+    setMethod(next); goToStep(0); setContext(undefined); draftContextRef.current = undefined; setResult(undefined); setError(''); setFieldErrors({}); setPeriodsChanged(false);
     setWages([]); setYears([]); setBonus('0'); setLeave('0'); setOrdinary(''); setBalance(''); setBalanceDate('');
   }
   async function run(task: () => Promise<void>) {
@@ -103,15 +93,15 @@ export default function CalculatorScreen() {
     if (prepared.eligibility.status !== 'eligible') {
       setResult(await calculate({ method, employment } as CalculationInput)); goToStep(3); return;
     }
-    const previous = draftContext.current;
+    const previous = draftContextRef.current;
     setPeriodsChanged(!example && !!previous && previous.method === method && JSON.stringify(method === 'dc' ? previous.dcPeriods : previous.wagePeriods) !== JSON.stringify(method === 'dc' ? prepared.dcPeriods : prepared.wagePeriods));
-    setWages(example ? prepared.wagePeriods.map((p, index) => ({ startDate: p.startDate, endDate: p.endDate, basePay: index === 0 || index === 3 ? '1000000' : '2000000', allowances: index === 0 || index === 3 ? '180000' : '360000' })) : reconcileWages(draftContext.current, wages, prepared));
-    setYears(example ? prepared.dcPeriods.map(p => ({ year: p.year, wages: '30000000' })) : reconcileYears(draftContext.current, years, prepared));
-    if (example || draftContext.current?.method !== method || draftContext.current.retirementDate !== prepared.retirementDate) {
+    setWages(example ? prepared.wagePeriods.map((p, index) => ({ startDate: p.startDate, endDate: p.endDate, basePay: index === 0 || index === 3 ? '1000000' : '2000000', allowances: index === 0 || index === 3 ? '180000' : '360000' })) : reconcileWages(draftContextRef.current, wages, prepared));
+    setYears(example ? prepared.dcPeriods.map(p => ({ year: p.year, wages: '30000000' })) : reconcileYears(draftContextRef.current, years, prepared));
+    if (example || draftContextRef.current?.method !== method || draftContextRef.current.retirementDate !== prepared.retirementDate) {
       setBonus(example ? '4000000' : '0'); setLeave(example ? '300000' : '0'); setOrdinary('');
     }
     if (example) { setBalance(''); setBalanceDate(''); }
-    draftContext.current = prepared;
+    draftContextRef.current = prepared;
     setFieldErrors({}); goToStep(1);
   }
   function review() {
@@ -127,7 +117,7 @@ export default function CalculatorScreen() {
 
   return <Screen ref={scroll} contentRef={content}>
     <View><Copy style={styles.eyebrow}>{t('eyebrow')}</Copy><Copy accessibilityRole="header" style={styles.title}>{t('hero')}</Copy><Copy style={styles.subtitle}>{t('heroSub')}</Copy></View>
-    <View style={styles.card}><View><Copy accessibilityRole="header" style={styles.heading}>{t('calculatorTitle')}</Copy><Copy style={styles.help}>{t('calculatorSub')}</Copy></View><Button secondary title={t('example')} busy={busy} onPress={() => void run(async () => { form.reset(sample); await prepare(sample, true); })} />
+    <View style={styles.card}><View><Copy accessibilityRole="header" style={styles.heading}>{t('calculatorTitle')}</Copy><Copy style={styles.help}>{t('calculatorSub')}</Copy></View><Button secondary title={t('example')} busy={busy} onPress={() => void run(async () => { resetEmployment(sample); await prepare(sample, true); })} />
       <Copy style={styles.eyebrow}>{t('planLabel')}</Copy>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8 }}>{(['normal', 'db', 'dc'] as const).map(m => <Pressable key={m} accessibilityRole="radio" accessibilityLabel={`${t(m)} ${t(`${m}Sub`)}`} accessibilityState={{ checked: method === m, disabled: busy }} aria-checked={method === m} aria-disabled={busy} disabled={busy} onPress={() => { if (m !== method) reset(m); }} style={{ flex: 1, padding: 12, borderWidth: 1, borderColor: method === m ? '#829d71' : colors.border, backgroundColor: method === m ? '#eff5e7' : '#fff', borderRadius: 8 }}><Copy style={styles.smallHeading}>{t(m)}</Copy><Copy style={{ fontSize: 10, lineHeight: 21, color: colors.muted }}>{t(`${m}Sub`)}</Copy></Pressable>)}</View>
       <Pressable accessibilityRole="button" onPress={() => router.navigate('/guide')}><Copy style={{ fontSize: 11, color: '#6e855b' }}>{t('planHelp')} ↗</Copy></Pressable>
@@ -137,7 +127,7 @@ export default function CalculatorScreen() {
         <View><Copy ref={heading} accessible accessibilityRole="header" tabIndex={-1} style={styles.heading}>{t('employmentTitle')}</Copy><Copy style={styles.help}>{t('employmentSub')}</Copy></View>
         <Controller control={form.control} name="startDate" render={({ field, fieldState }) => <Field {...fieldProps('startDate')} label={t('startDate')} placeholder="YYYY-MM-DD" value={field.value} onChangeText={field.onChange} onBlur={field.onBlur} keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'} maxLength={10} error={fieldState.error && t(fieldState.error.message!)} />} />
         <Controller control={form.control} name="lastWorkingDate" render={({ field, fieldState }) => <Field {...fieldProps('lastWorkingDate')} label={t('lastWorkingDate')} help={t('lastDayHelp')} placeholder="YYYY-MM-DD" value={field.value} onChangeText={field.onChange} onBlur={field.onBlur} keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'} maxLength={10} error={fieldState.error && t(fieldState.error.message!)} />} />
-        <Controller control={form.control} name="weeklyHours" render={({ field, fieldState }) => <Field {...fieldProps('weeklyHours')} label={t('weeklyHours')} help={t('hoursHelp')} value={Number.isFinite(field.value) ? String(field.value) : ''} onChangeText={v => field.onChange(v.trim() === '' ? NaN : Number(v))} keyboardType="decimal-pad" error={fieldState.error && t('validHours')} />} />
+        <Controller control={form.control} name="weeklyHours" render={({ field, fieldState }) => <Field {...fieldProps('weeklyHours')} label={t('weeklyHours')} help={t('hoursHelp')} value={weeklyHoursText} onChangeText={v => { setWeeklyHoursText(v); field.onChange(v.trim() === '' ? NaN : Number(v)); }} keyboardType="decimal-pad" error={fieldState.error && t('validHours')} />} />
         <View style={styles.note}><View style={styles.row}><Controller control={form.control} name="hasSpecialCircumstances" render={({ field }) => <Switch accessibilityLabel={t('special')} value={field.value} onValueChange={field.onChange} trackColor={{ true: '#719a66', false: '#dbe4d2' }} />} /><Copy style={{ fontSize: 12, flex: 1 }}>{t('special')}</Copy></View><Copy style={styles.help}>{t('specialHelp')}</Copy></View>
         <Button title={t('continue')} busy={busy} onPress={() => void form.handleSubmit(v => run(() => prepare(v)), errors => { const first = ['startDate', 'lastWorkingDate', 'weeklyHours'].find(key => key in errors); if (first) setAttention({ target: first }); })()} />
       </>}
@@ -168,7 +158,7 @@ export default function CalculatorScreen() {
         {method === 'dc' && !!balance && <SummaryRow label={t('balance')} value={`₩${inputMoney(balance)} · ${fmtDate(balanceDate)}`} />}
         <Button title={t('calculate')} busy={busy} onPress={() => void run(async () => { setResult(await calculate(payload())); goToStep(3); })} /><Button title={t('back')} secondary onPress={() => goToStep(1)} disabled={busy} />
       </>}
-      {step === 3 && result && <><Copy ref={heading} accessible accessibilityRole="header" tabIndex={-1} style={styles.heading}>{t(result.result ? 'result' : result.status === 'ineligible' ? 'ineligibleTitle' : 'reviewTitleResult')}</Copy><Result value={result} /><Button title={t('edit')} secondary onPress={() => { goToStep(context?.eligibility.status === 'eligible' ? 1 : 0); setResult(undefined); }} /><Button title={t('startAgain')} onPress={() => { reset(method); form.reset(blank); }} /></>}
+      {step === 3 && result && <><Copy ref={heading} accessible accessibilityRole="header" tabIndex={-1} style={styles.heading}>{t(result.result ? 'result' : result.status === 'ineligible' ? 'ineligibleTitle' : 'reviewTitleResult')}</Copy><Result value={result} /><Button title={t('edit')} secondary onPress={() => { goToStep(context?.eligibility.status === 'eligible' ? 1 : 0); setResult(undefined); }} /><Button title={t('startAgain')} onPress={() => { reset(method); resetEmployment(blankEmployment); }} /></>}
     </View>
     <View style={styles.note}><Copy style={styles.smallHeading}>{t('privacyTitle')}</Copy><Copy style={styles.help}>{t('privacySub')}</Copy><Copy style={styles.help}>{t('connection')}</Copy></View>
     <Sources />

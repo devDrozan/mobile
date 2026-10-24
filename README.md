@@ -6,7 +6,7 @@ Android and iPhone severance calculator for E-9 workers in South Korea, built wi
 
 Choose a language and Normal, DB, or DC, enter employment details, complete the special-case questions, and enter wages for the displayed periods. Review the inputs before submitting, then read the eligibility explanation, estimate, breakdown, and official sources. Cases needing individual review show an explanation without a benefit total. DC required contributions and an optional reported account balance appear separately.
 
-No account is required. Calculations need a connection to the API. Entries stay in memory; only the language preference is saved on the device.
+No account is required. Calculations need a connection to the API. Entries stay in memory while consulting guidance and returning to the calculator; only the language preference is saved on the device. Closing or reloading the app clears the calculation session. Fractional weekly hours remain intact while typing, and reported DC balances keep their entered decimal precision on results.
 
 ## Development
 

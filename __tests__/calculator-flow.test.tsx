@@ -4,6 +4,9 @@ import CalculatorScreen from '../src/app/index';
 import { ApiFailure, calculate, getContext, type Context } from '../src/api/client';
 import { apiMoneyField, reconcileWages, reconcileYears } from '../src/calculator-draft';
 import { inputMoney } from '../src/validation';
+import { CalculatorSessionProvider } from '../src/calculator-session';
+
+const renderCalculator = () => render(<CalculatorSessionProvider><CalculatorScreen /></CalculatorSessionProvider>);
 
 jest.mock('expo-router', () => ({ usePathname: () => '/', router: { navigate: jest.fn() } }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
@@ -26,7 +29,7 @@ beforeEach(async () => {
 });
 
 it('retains every wage field through Back and unchanged employment, and reviews exact decimals', async () => {
-  await render(<CalculatorScreen />);
+  await renderCalculator();
   await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
   await fireEvent.changeText(screen.getAllByLabelText('Base pay')[0], '1000000.50');
   await fireEvent.changeText(screen.getByLabelText('Eligible bonuses in the previous 12 months'), '2000000.123456');
@@ -46,7 +49,7 @@ it('retains every wage field through Back and unchanged employment, and reviews 
 });
 
 it('gives amount-specific inline errors and translates them without discarding the draft', async () => {
-  await render(<CalculatorScreen />);
+  await renderCalculator();
   await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
   await fireEvent.changeText(screen.getAllByLabelText('Base pay')[0], '-1');
   await fireEvent.changeText(screen.getByLabelText(/Daily ordinary wage, if known/), '0.000000');
@@ -63,7 +66,7 @@ it('gives amount-specific inline errors and translates them without discarding t
 });
 
 it('associates a DC balance-date error with its field and preserves yearly wages', async () => {
-  await render(<CalculatorScreen />);
+  await renderCalculator();
   await fireEvent.press(screen.getByRole('radio', { name: 'DC Defined contribution pension' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
   await fireEvent.changeText(screen.getAllByLabelText('Gross wages earned')[0], '999999999999999.123456');
@@ -82,7 +85,7 @@ it('associates a DC balance-date error with its field and preserves yearly wages
 });
 
 it('returns structured API amount errors to the editable wage field', async () => {
-  await render(<CalculatorScreen />);
+  await renderCalculator();
   await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Review my details' }));
   jest.mocked(calculate).mockRejectedValueOnce(new ApiFailure([{ field: 'wages.0.basePay', code: 'INVALID_VALUE' }]));
@@ -101,4 +104,55 @@ it('keeps only amounts whose exact API-generated periods still match', () => {
   expect(reconcileYears(dc, [{ year: 2024, wages: '1000.50' }, { year: 2025, wages: '2000.50' }], changedDc)).toEqual([{ year: 2024, wages: '' }, { year: 2025, wages: '2000.50' }]);
   expect(apiMoneyField('dcWages.1.wages', [{ year: 2024, wages: '' }, { year: 2025, wages: '' }])).toBe('year-2025');
   expect(inputMoney('0.000000')).toBe('0.000000');
+});
+
+it('preserves a decimal point during sequential hours entry and submits the intended hours', async () => {
+  await renderCalculator();
+  await fireEvent.changeText(screen.getByLabelText('First working day'), '2014-10-02');
+  await fireEvent.changeText(screen.getByLabelText('Last working day'), '2017-09-15');
+  for (const value of ['', '1', '14', '14.', '14.5']) {
+    await fireEvent.changeText(screen.getByLabelText('Scheduled hours per week'), value);
+    expect(screen.getByLabelText('Scheduled hours per week')).toHaveDisplayValue(value);
+  }
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue to wages' }));
+  expect(getContext).toHaveBeenCalledWith({
+    method: 'normal',
+    employment: { startDate: '2014-10-02', lastWorkingDate: '2017-09-15', weeklyHours: 14.5, hasSpecialCircumstances: false },
+  });
+});
+
+it('retains a reviewed wage draft when guidance unmounts the calculator route', async () => {
+  const route = (showCalculator: boolean) => <CalculatorSessionProvider>{showCalculator ? <CalculatorScreen /> : null}</CalculatorSessionProvider>;
+  const view = await render(route(true));
+  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await fireEvent.changeText(screen.getAllByLabelText('Base pay')[0], '123456.789012');
+  await fireEvent.changeText(screen.getByLabelText('Eligible bonuses in the previous 12 months'), '2000000.123456');
+  await fireEvent.press(screen.getByRole('button', { name: 'Review my details' }));
+  await view.rerender(route(false));
+  await view.rerender(route(true));
+  expect(screen.getByText('₩123,456.789012')).toBeOnTheScreen();
+  expect(screen.getByText('₩2,000,000.123456')).toBeOnTheScreen();
+  expect(getContext).toHaveBeenCalledTimes(1);
+  await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+  expect(screen.getAllByLabelText('Base pay')[0]).toHaveDisplayValue('123456.789012');
+  await view.unmount();
+  await renderCalculator();
+  expect(screen.getByLabelText('First working day')).toHaveDisplayValue('');
+});
+
+it('retains the DC scheme, yearly wages, balance and statement date across route remounts', async () => {
+  const route = (showCalculator: boolean) => <CalculatorSessionProvider>{showCalculator ? <CalculatorScreen /> : null}</CalculatorSessionProvider>;
+  const view = await render(route(true));
+  await fireEvent.press(screen.getByRole('radio', { name: 'DC Defined contribution pension' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await fireEvent.changeText(screen.getAllByLabelText('Gross wages earned')[0], '18000000.123456');
+  await fireEvent.changeText(screen.getByLabelText(/Reported DC account balance/), '12000000.50');
+  await fireEvent.changeText(screen.getByLabelText('Statement date'), '2025-12-31');
+  await view.rerender(route(false));
+  await view.rerender(route(true));
+  expect(screen.getByRole('radio', { name: 'DC Defined contribution pension' })).toBeChecked();
+  expect(screen.getAllByLabelText('Gross wages earned')[0]).toHaveDisplayValue('18000000.123456');
+  expect(screen.getByLabelText(/Reported DC account balance/)).toHaveDisplayValue('12000000.50');
+  expect(screen.getByLabelText('Statement date')).toHaveDisplayValue('2025-12-31');
+  expect(getContext).toHaveBeenCalledTimes(1);
 });
