@@ -120,7 +120,7 @@ export default function CalculatorScreen() {
   }
 
   return <Screen ref={scroll} contentRef={content}>
-    <View><Copy style={styles.eyebrow}>{t('eyebrow')}</Copy><Copy accessibilityRole="header" accessibilityLabel={hero} style={[styles.title, isBurmese && styles.burmeseTitle]}>{displayHero}</Copy><Copy style={styles.subtitle}>{t('heroSub')}</Copy></View>
+    <View><Copy style={styles.eyebrow}>{t('eyebrow')}</Copy><Copy accessibilityRole="header" accessibilityLabel={hero} style={isBurmese ? styles.burmeseTitle : styles.title}>{displayHero}</Copy><Copy style={styles.subtitle}>{t('heroSub')}</Copy></View>
     <View style={styles.card}><View><Copy accessibilityRole="header" style={styles.heading}>{t('calculatorTitle')}</Copy><Copy style={styles.help}>{t('calculatorSub')}</Copy></View><Button secondary title={t('example')} busy={busy} onPress={() => void run(async () => { resetEmployment(sample); await prepare(sample, true); })} />
       <Copy style={styles.eyebrow}>{t('planLabel')}</Copy>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8 }}>{(['normal', 'db', 'dc'] as const).map(m => <Pressable key={m} accessibilityRole="radio" accessibilityLabel={`${t(m)} ${t(`${m}Sub`)}`} accessibilityState={{ checked: method === m, disabled: busy }} aria-checked={method === m} aria-disabled={busy} disabled={busy} onPress={() => { if (m !== method) reset(m); }} style={{ flex: 1, padding: 12, borderWidth: 1, borderColor: method === m ? '#829d71' : colors.border, backgroundColor: method === m ? '#eff5e7' : '#fff', borderRadius: 8 }}><Copy style={styles.smallHeading}>{t(m)}</Copy><Copy style={{ fontSize: 10, lineHeight: 21, color: colors.muted }}>{t(`${m}Sub`)}</Copy></Pressable>)}</View>

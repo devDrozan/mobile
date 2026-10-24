@@ -1,11 +1,20 @@
 import { type ComponentRef, type PropsWithChildren, type Ref } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextProps, type TextInputProps } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextProps, type TextInputProps } from 'react-native';
 import { usePathname, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../i18n';
 
 export const colors = { green: '#123c35', text: '#243b35', muted: '#68795f', border: '#dfe7d7', background: '#f7f8f4', lime: '#d5eab5' };
-export function Copy({ style, ...props }: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) { return <Text {...props} style={[styles.copy, style]} />; }
+export function Copy({ style, ...props }: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) {
+  const { i18n } = useTranslation();
+  if (Platform.OS === 'ios' && i18n.resolvedLanguage === 'my' && props.accessibilityRole === 'header') {
+    // Fixed line boxes clip this font's upper combining marks on iOS. Preserve
+    // the font's own line metrics and shaping instead of inheriting Latin spacing.
+    const headingStyle = StyleSheet.flatten([styles.copy, style]);
+    return <Text {...props} style={{ ...headingStyle, lineHeight: undefined, letterSpacing: undefined }} />;
+  }
+  return <Text {...props} style={[styles.copy, style]} />;
+}
 export function Button({ title, onPress, secondary = false, busy = false, disabled = false }: { title: string; onPress: () => void; secondary?: boolean; busy?: boolean; disabled?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy, busy }} onPress={onPress} disabled={disabled || busy} style={({ pressed }) => [styles.button, secondary && styles.secondary, (pressed || disabled || busy) && { opacity: .55 }]}>{busy && <ActivityIndicator accessible={false} color={secondary ? colors.green : '#fff'} />}<Copy style={[styles.buttonText, secondary && { color: colors.green }]}>{title}</Copy></Pressable>;
 }
@@ -40,7 +49,7 @@ export const styles = StyleSheet.create({
   tabText: { fontSize: 11, lineHeight: 22, textAlign: 'center', color: colors.muted },
   eyebrow: { fontSize: 10, letterSpacing: .8, color: '#6c825d', lineHeight: 23 },
   title: { fontSize: 29, lineHeight: 46, letterSpacing: -.6, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },
-  burmeseTitle: { fontSize: 26, lineHeight: 46, letterSpacing: 0 },
+  burmeseTitle: { fontSize: 26, lineHeight: 46, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },
   subtitle: { fontSize: 13, color: colors.muted, lineHeight: 26 },
   card: { backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, borderRadius: 13, padding: 20, gap: 18 },
   heading: { fontSize: 18, lineHeight: 32, fontFamily: 'NotoSansMyanmar_600SemiBold' },
