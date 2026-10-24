@@ -11,14 +11,14 @@ export function useUi() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   return { colors, styles };
 }
-export function Copy({ style, ...props }: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) {
+export function Copy({ style, nativeMyanmarLineMetrics = false, ...props }: TextProps & { nativeMyanmarLineMetrics?: boolean; ref?: Ref<ComponentRef<typeof Text>> }) {
   const { i18n } = useTranslation();
   const { styles } = useUi();
-  if (Platform.OS === 'ios' && i18n.resolvedLanguage === 'my' && props.accessibilityRole === 'header') {
+  if (Platform.OS === 'ios' && i18n.resolvedLanguage === 'my' && (props.accessibilityRole === 'header' || nativeMyanmarLineMetrics)) {
     // Fixed line boxes clip this font's upper combining marks on iOS. Preserve
     // the font's own line metrics and shaping instead of inheriting Latin spacing.
-    const headingStyle = StyleSheet.flatten([styles.copy, style]);
-    return <Text {...props} style={{ ...headingStyle, lineHeight: undefined, letterSpacing: undefined }} />;
+    const naturalMetricStyle = StyleSheet.flatten([styles.copy, style]);
+    return <Text {...props} style={{ ...naturalMetricStyle, lineHeight: undefined, letterSpacing: undefined }} />;
   }
   return <Text {...props} style={[styles.copy, style]} />;
 }

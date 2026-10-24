@@ -1,11 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Button, Text, useColorScheme } from 'react-native';
+import { Button, Platform, StyleSheet, Text, useColorScheme, type TextStyle } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, usePathname } from 'expo-router';
 import i18n from '../src/i18n';
 import { AppThemeProvider, useAppTheme } from '../src/theme';
 import { darkColors, lightColors } from '../src/theme-colors';
-import { Header } from '../src/components/ui';
+import { Copy, Header } from '../src/components/ui';
 import AboutScreen from '../src/app/about';
 import { CalculatorSessionProvider } from '../src/calculator-session';
 import CalculatorScreen from '../src/app/index';
@@ -36,6 +36,8 @@ beforeEach(async () => {
   jest.mocked(useColorScheme).mockReturnValue('light');
   await act(() => i18n.changeLanguage('en'));
 });
+
+afterEach(() => jest.restoreAllMocks());
 
 it('follows system changes until a manual appearance is selected, then remembers that choice', async () => {
   const tree = () => <AppThemeProvider><ThemeProbe /></AppThemeProvider>;
@@ -179,10 +181,54 @@ it.each(['en', 'my'])('shows the approved About content, copyright and return ac
   await render(<AppThemeProvider><AboutScreen /></AppThemeProvider>);
   expect(screen.getByText(i18n.t('aboutCreator'))).toBeOnTheScreen();
   expect(screen.getByText(i18n.t('aboutPurpose'))).toBeOnTheScreen();
-  expect(screen.getByText(i18n.t('aboutScope'))).toBeOnTheScreen();
+  expect(screen.getByText(i18n.t('aboutScopeDetails'))).toBeOnTheScreen();
+  expect(screen.getByText(i18n.t('aboutScopeEstimate'))).toBeOnTheScreen();
   expect(screen.getByText(i18n.t('copyright', { year: new Date().getFullYear() }))).toBeOnTheScreen();
   await fireEvent.press(screen.getByRole('button', { name: i18n.t('returnCalculator') }));
   expect(router.navigate).toHaveBeenCalledWith('/');
+});
+
+it.each([
+  ['ios', 'my'], ['android', 'my'], ['ios', 'en'],
+] as const)('leaves room for About paragraphs without shrinking or truncation on %s in %s', async (platform, language) => {
+  jest.replaceProperty(Platform, 'OS', platform);
+  await act(() => i18n.changeLanguage(language));
+  await render(<AboutScreen />);
+  for (const key of ['aboutPurpose', 'aboutScopeDetails', 'aboutScopeEstimate']) {
+    const paragraph = screen.getByText(i18n.t(key));
+    const style = StyleSheet.flatten<TextStyle>(paragraph.props.style) ?? {};
+    expect(style.fontSize).toBeGreaterThanOrEqual(key === 'aboutPurpose' ? 14 : 13);
+    expect(paragraph.props.numberOfLines).toBeUndefined();
+    expect(paragraph.props.adjustsFontSizeToFit).not.toBe(true);
+    expect(paragraph.props.allowFontScaling).not.toBe(false);
+    if (platform === 'ios' && language === 'my') {
+      expect(style.lineHeight).toBeUndefined();
+      expect(style.letterSpacing).toBeUndefined();
+    } else if (language === 'my') {
+      // The bundled font has 1324 ascent + 860 descent per 1000 units.
+      expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize! * 2.184);
+    } else {
+      expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize! * 1.4);
+    }
+  }
+});
+
+it('protects native Myanmar body and heading marks from inherited fixed line boxes and tracking', async () => {
+  jest.replaceProperty(Platform, 'OS', 'ios');
+  await act(() => i18n.changeLanguage('my'));
+  const inherited = [{ fontSize: 15, lineHeight: 20 }, { letterSpacing: -.6 }];
+  await render(<>
+    <Copy testID="body" nativeMyanmarLineMetrics style={inherited}>နားလည်နိုင်ရန်</Copy>
+    <Copy testID="heading" accessibilityRole="header" style={inherited}>ရည်ရွယ်ချက်</Copy>
+  </>);
+  for (const id of ['body', 'heading']) {
+    const text = screen.getByTestId(id);
+    const style = StyleSheet.flatten<TextStyle>(text.props.style) ?? {};
+    expect(style.fontSize).toBe(15);
+    expect(style.lineHeight).toBeUndefined();
+    expect(style.letterSpacing).toBeUndefined();
+    expect(text.props.nativeMyanmarLineMetrics).toBeUndefined();
+  }
 });
 
 function luminance(hex: string) {
