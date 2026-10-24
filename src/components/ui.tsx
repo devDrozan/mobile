@@ -40,6 +40,7 @@ export const styles = StyleSheet.create({
   tabText: { fontSize: 11, lineHeight: 22, textAlign: 'center', color: colors.muted },
   eyebrow: { fontSize: 10, letterSpacing: .8, color: '#6c825d', lineHeight: 23 },
   title: { fontSize: 29, lineHeight: 46, letterSpacing: -.6, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },
+  burmeseTitle: { fontSize: 26, lineHeight: 46, letterSpacing: 0 },
   subtitle: { fontSize: 13, color: colors.muted, lineHeight: 26 },
   card: { backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, borderRadius: 13, padding: 20, gap: 18 },
   heading: { fontSize: 18, lineHeight: 32, fontFamily: 'NotoSansMyanmar_600SemiBold' },
