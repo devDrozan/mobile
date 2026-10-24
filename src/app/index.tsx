@@ -7,7 +7,7 @@ import { ApiFailure, calculate, getContext, type ContextInput, type CalculationI
 import { type EmploymentValues, dateLabel, inputMoney } from '../validation';
 import { apiMoneyField, reconcileWages, reconcileYears, validateWages, type FieldErrors } from '../calculator-draft';
 import { blankEmployment, useCalculatorSession } from '../calculator-session';
-import { colors, Button, Copy, Field, MoneyField, Screen, styles } from '../components/ui';
+import { Button, Copy, Field, MoneyField, Screen, useUi } from '../components/ui';
 import { Result, SummaryRow } from '../components/Result';
 import { Sources } from '../components/InfoContent';
 
@@ -16,6 +16,7 @@ const sample: EmploymentValues = { startDate: '2014-10-02', lastWorkingDate: '20
 
 export default function CalculatorScreen() {
   const { t, i18n } = useTranslation();
+  const { colors, styles } = useUi();
   const isBurmese = i18n.resolvedLanguage === 'my';
   const hero = t('hero');
   // Keep the final Burmese phrase together by using its existing phrase boundary.
@@ -123,16 +124,16 @@ export default function CalculatorScreen() {
     <View><Copy style={styles.eyebrow}>{t('eyebrow')}</Copy><Copy accessibilityRole="header" accessibilityLabel={hero} style={isBurmese ? styles.burmeseTitle : styles.title}>{displayHero}</Copy><Copy style={styles.subtitle}>{t('heroSub')}</Copy></View>
     <View style={styles.card}><View><Copy accessibilityRole="header" style={styles.heading}>{t('calculatorTitle')}</Copy><Copy style={styles.help}>{t('calculatorSub')}</Copy></View><Button secondary title={t('example')} busy={busy} onPress={() => void run(async () => { resetEmployment(sample); await prepare(sample, true); })} />
       <Copy style={styles.eyebrow}>{t('planLabel')}</Copy>
-      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8 }}>{(['normal', 'db', 'dc'] as const).map(m => <Pressable key={m} accessibilityRole="radio" accessibilityLabel={`${t(m)} ${t(`${m}Sub`)}`} accessibilityState={{ checked: method === m, disabled: busy }} aria-checked={method === m} aria-disabled={busy} disabled={busy} onPress={() => { if (m !== method) reset(m); }} style={{ flex: 1, padding: 12, borderWidth: 1, borderColor: method === m ? '#829d71' : colors.border, backgroundColor: method === m ? '#eff5e7' : '#fff', borderRadius: 8 }}><Copy style={styles.smallHeading}>{t(m)}</Copy><Copy style={{ fontSize: 10, lineHeight: 21, color: colors.muted }}>{t(`${m}Sub`)}</Copy></Pressable>)}</View>
-      <Pressable accessibilityRole="button" onPress={() => router.navigate('/guide')}><Copy style={{ fontSize: 11, color: '#6e855b' }}>{t('planHelp')} ↗</Copy></Pressable>
-      <View style={{ flexDirection: 'row', paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border }}>{['employment', 'wages', 'review'].map((key, index) => <Copy key={key} style={{ flex: 1, textAlign: 'center', fontSize: 10, color: step >= index ? colors.green : '#829274' }}>{step > index ? '✓' : index + 1} {t(key)}</Copy>)}</View>
+      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8 }}>{(['normal', 'db', 'dc'] as const).map(m => <Pressable key={m} accessibilityRole="radio" accessibilityLabel={`${t(m)} ${t(`${m}Sub`)}`} accessibilityState={{ checked: method === m, disabled: busy }} aria-checked={method === m} aria-disabled={busy} disabled={busy} onPress={() => { if (m !== method) reset(m); }} style={{ flex: 1, padding: 12, borderWidth: 1, borderColor: method === m ? colors.selectedBorder : colors.border, backgroundColor: method === m ? colors.selected : colors.surface, borderRadius: 8 }}><Copy style={styles.smallHeading}>{t(m)}</Copy><Copy style={{ fontSize: 10, lineHeight: 21, color: colors.muted }}>{t(`${m}Sub`)}</Copy></Pressable>)}</View>
+      <Pressable accessibilityRole="button" onPress={() => router.navigate('/guide')}><Copy style={{ fontSize: 11, color: colors.link }}>{t('planHelp')} ↗</Copy></Pressable>
+      <View style={{ flexDirection: 'row', paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border }}>{['employment', 'wages', 'review'].map((key, index) => <Copy key={key} style={{ flex: 1, textAlign: 'center', fontSize: 10, color: step >= index ? colors.primary : colors.muted }}>{step > index ? '✓' : index + 1} {t(key)}</Copy>)}</View>
       {!!error && <View ref={errorBox} accessible accessibilityRole="alert" tabIndex={-1} style={styles.errorBox}><Copy style={styles.error}>{t(error)}</Copy></View>}
       {step === 0 && <>
         <View><Copy ref={heading} accessible accessibilityRole="header" tabIndex={-1} style={styles.heading}>{t('employmentTitle')}</Copy><Copy style={styles.help}>{t('employmentSub')}</Copy></View>
         <Controller control={form.control} name="startDate" render={({ field, fieldState }) => <Field {...fieldProps('startDate')} label={t('startDate')} placeholder="YYYY-MM-DD" value={field.value} onChangeText={field.onChange} onBlur={field.onBlur} keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'} maxLength={10} error={fieldState.error && t(fieldState.error.message!)} />} />
         <Controller control={form.control} name="lastWorkingDate" render={({ field, fieldState }) => <Field {...fieldProps('lastWorkingDate')} label={t('lastWorkingDate')} help={t('lastDayHelp')} placeholder="YYYY-MM-DD" value={field.value} onChangeText={field.onChange} onBlur={field.onBlur} keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'} maxLength={10} error={fieldState.error && t(fieldState.error.message!)} />} />
         <Controller control={form.control} name="weeklyHours" render={({ field, fieldState }) => <Field {...fieldProps('weeklyHours')} label={t('weeklyHours')} help={t('hoursHelp')} value={weeklyHoursText} onChangeText={v => { setWeeklyHoursText(v); field.onChange(v.trim() === '' ? NaN : Number(v)); }} keyboardType="decimal-pad" error={fieldState.error && t('validHours')} />} />
-        <View style={styles.note}><View style={styles.row}><Controller control={form.control} name="hasSpecialCircumstances" render={({ field }) => <Switch accessibilityLabel={t('special')} value={field.value} onValueChange={field.onChange} trackColor={{ true: '#719a66', false: '#dbe4d2' }} />} /><Copy style={{ fontSize: 12, flex: 1 }}>{t('special')}</Copy></View><Copy style={styles.help}>{t('specialHelp')}</Copy></View>
+        <View style={styles.note}><View style={styles.row}><Controller control={form.control} name="hasSpecialCircumstances" render={({ field }) => <Switch accessibilityLabel={t('special')} value={field.value} onValueChange={field.onChange} trackColor={{ true: colors.switchOn, false: colors.switchOff }} ios_backgroundColor={colors.switchOff} />} /><Copy style={{ fontSize: 12, flex: 1 }}>{t('special')}</Copy></View><Copy style={styles.help}>{t('specialHelp')}</Copy></View>
         <Button title={t('continue')} busy={busy} onPress={() => void form.handleSubmit(v => run(() => prepare(v)), errors => { const first = ['startDate', 'lastWorkingDate', 'weeklyHours'].find(key => key in errors); if (first) setAttention({ target: first }); })()} />
       </>}
       {step === 1 && context && <>

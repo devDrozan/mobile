@@ -139,5 +139,16 @@
   "footer": "A clearer path for workers in Korea.",
   "update": "An updated app is ready. Your current entries will remain until you choose to reload.",
   "reload": "Reload app",
-  "language": "Language"
+  "language": "Language",
+  "appearance": "Appearance",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "about": "About",
+  "aboutTitle": "About this app",
+  "aboutCreator": "Created by devrozan",
+  "aboutPurposeTitle": "Purpose",
+  "aboutPurpose": "Built to help Myanmar workers in South Korea understand their severance pay and retirement benefits more easily.",
+  "aboutScope": "The app explains Normal, DB and DC calculations in English and Burmese. Results are estimates before tax, in Korean won.",
+  "copyright": "© {{year}} devrozan"
 }
