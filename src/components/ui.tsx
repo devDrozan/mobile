@@ -51,11 +51,11 @@ export function Header() {
 function HeaderContent({ path }: { path: string }) {
   const { t, i18n } = useTranslation();
   const { colors, styles } = useUi();
-  const { mode, setMode } = useAppTheme();
+  const { resolvedTheme, setMode } = useAppTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsToggle = useRef<ComponentRef<typeof View>>(null);
   const tabs = [{ path: '/' as const, label: 'calculator' }, { path: '/guide' as const, label: 'guide' }, { path: '/insurance' as const, label: 'insurance' }];
-  const modeLabels = { system: 'themeSystem', light: 'themeLight', dark: 'themeDark' } as const;
+  const modeLabels = { light: 'themeLight', dark: 'themeDark' } as const;
   function closeSettings(restoreFocus = false) {
     setSettingsOpen(false);
     if (restoreFocus) requestAnimationFrame(() => {
@@ -67,13 +67,12 @@ function HeaderContent({ path }: { path: string }) {
   return <View style={styles.header}>
     <View style={styles.brandRow}>
       <View style={styles.mark}><Copy style={styles.markText}>₩</Copy></View><Copy style={styles.brand}>{t('appName')}</Copy>
-      <Pressable ref={settingsToggle} accessibilityRole="button" accessibilityLabel={t('settings')} accessibilityState={{ expanded: settingsOpen }} aria-expanded={settingsOpen} onPress={() => settingsOpen ? closeSettings(true) : setSettingsOpen(true)} style={({ pressed }) => [styles.settingsToggle, settingsOpen && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><Text accessible={false} style={styles.settingsIcon}>⚙︎</Text></Pressable>
+      <Pressable ref={settingsToggle} accessibilityRole="button" accessibilityLabel={t('menu')} accessibilityState={{ expanded: settingsOpen }} aria-expanded={settingsOpen} onPress={() => settingsOpen ? closeSettings(true) : setSettingsOpen(true)} style={({ pressed }) => [styles.settingsToggle, settingsOpen && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><MenuIcon name={settingsOpen ? 'close' : 'menu'} color={colors.primary} /></Pressable>
     </View>
     <View style={styles.tabs}>{tabs.map(tab => <Pressable key={tab.path} accessibilityRole="button" accessibilityState={{ selected: path === tab.path }} onPress={() => { closeSettings(); if (path !== tab.path) router.navigate(tab.path); }} style={[styles.tab, path === tab.path && { borderBottomColor: colors.selectedBorder }]}><Copy style={[styles.tabText, path === tab.path && { color: colors.primary }]}>{t(tab.label)}</Copy></Pressable>)}</View>
     {settingsOpen && <ScrollView style={styles.settingsPanel} contentContainerStyle={styles.settingsContent} keyboardShouldPersistTaps="handled" onAccessibilityEscape={() => closeSettings(true)}>
-      <Copy accessibilityRole="header" style={styles.smallHeading}>{t('settings')}</Copy>
       <View style={styles.settingsSection}>
-        <Copy style={styles.label}>{t('language')}</Copy>
+        <View style={styles.menuRowLabel}><MenuIcon name="language" color={colors.primary} /><Copy style={[styles.label, styles.menuLabelText]}>{t('language')}</Copy></View>
         <View accessibilityRole="radiogroup" accessibilityLabel={t('language')} style={styles.settingsOptions}>{(['en', 'my'] as const).map(language => {
           const checked = i18n.resolvedLanguage === language;
           const label = language === 'en' ? 'English' : 'မြန်မာ';
@@ -81,11 +80,24 @@ function HeaderContent({ path }: { path: string }) {
         })}</View>
       </View>
       <View style={styles.settingsSection}>
-        <Copy style={styles.label}>{t('appearance')}</Copy>
-        <View accessibilityRole="radiogroup" accessibilityLabel={t('appearance')} style={styles.settingsOptions}>{(['system', 'light', 'dark'] as const).map(nextMode => <Pressable key={nextMode} accessibilityRole="radio" accessibilityLabel={t(modeLabels[nextMode])} accessibilityState={{ checked: mode === nextMode }} aria-checked={mode === nextMode} onPress={() => setMode(nextMode)} style={[styles.settingsOption, mode === nextMode && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.settingsOptionText}>{mode === nextMode ? '✓ ' : ''}{t(modeLabels[nextMode])}</Copy></Pressable>)}</View>
+        <View style={styles.menuRowLabel}><MenuIcon name="appearance" color={colors.primary} /><Copy style={[styles.label, styles.menuLabelText]}>{t('appearance')}</Copy></View>
+        <View accessibilityRole="radiogroup" accessibilityLabel={t('appearance')} style={styles.settingsOptions}>{(['light', 'dark'] as const).map(nextMode => <Pressable key={nextMode} accessibilityRole="radio" accessibilityLabel={t(modeLabels[nextMode])} accessibilityState={{ checked: resolvedTheme === nextMode }} aria-checked={resolvedTheme === nextMode} onPress={() => setMode(nextMode)} style={[styles.settingsOption, resolvedTheme === nextMode && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.settingsOptionText}>{resolvedTheme === nextMode ? '✓ ' : ''}{t(modeLabels[nextMode])}</Copy></Pressable>)}</View>
       </View>
-      <Button title={t('about')} secondary onPress={() => { closeSettings(path === '/about'); if (path !== '/about') router.navigate('/about'); }} />
+      <Pressable accessibilityRole="button" accessibilityLabel={t('aboutUs')} onPress={() => { closeSettings(path === '/about'); if (path !== '/about') router.navigate('/about'); }} style={({ pressed }) => [styles.menuAbout, pressed && { opacity: .65 }]}><MenuIcon name="info" color={colors.primary} /><Copy style={[styles.label, { flex: 1 }]}>{t('aboutUs')}</Copy><MenuIcon name="chevron" color={colors.primary} /></Pressable>
     </ScrollView>}
+  </View>;
+}
+function MenuIcon({ name, color }: { name: 'menu' | 'close' | 'language' | 'appearance' | 'info' | 'chevron'; color: string }) {
+  const stroke = { borderColor: color, borderWidth: 1.5 };
+  const line = { position: 'absolute' as const, height: 1.5, backgroundColor: color, borderRadius: 1 };
+  return <View accessible={false} aria-hidden importantForAccessibility="no-hide-descendants" style={{ width: 22, height: 22, flexShrink: 0 }}>
+    {name === 'menu' && [5, 10, 15].map(top => <View key={top} style={[line, { left: 2, right: 2, top }]} />)}
+    {name === 'close' && [-45, 45].map(angle => <View key={angle} style={[line, { left: 2, right: 2, top: 10, transform: [{ rotate: `${angle}deg` }] }]} />)}
+    {(name === 'language' || name === 'appearance' || name === 'info') && <View style={[stroke, { position: 'absolute', width: 20, height: 20, left: 1, top: 1, borderRadius: 10 }]} />}
+    {name === 'language' && <><View style={[stroke, { position: 'absolute', width: 8, height: 20, left: 7, top: 1, borderRadius: 10 }]} /><View style={[line, { left: 2, right: 2, top: 10 }]} /></>}
+    {name === 'appearance' && <View style={{ position: 'absolute', left: 11, top: 2.5, width: 8.5, height: 17, borderTopRightRadius: 9, borderBottomRightRadius: 9, backgroundColor: color }} />}
+    {name === 'info' && <><View style={{ position: 'absolute', width: 2, height: 2, left: 10, top: 6, borderRadius: 1, backgroundColor: color }} /><View style={{ position: 'absolute', width: 1.5, height: 6, left: 10.25, top: 10, backgroundColor: color }} /></>}
+    {name === 'chevron' && <View style={{ position: 'absolute', width: 7, height: 7, left: 6, top: 7, borderTopWidth: 1.5, borderRightWidth: 1.5, borderColor: color, transform: [{ rotate: '45deg' }] }} />}
   </View>;
 }
 function createStyles(colors: ThemeColors) { return StyleSheet.create({
@@ -98,16 +110,18 @@ function createStyles(colors: ThemeColors) { return StyleSheet.create({
   markText: { color: colors.brandText, fontSize: 23, lineHeight: 33 },
   brand: { fontSize: 13, fontFamily: 'NotoSansMyanmar_600SemiBold', flex: 1, lineHeight: 26 },
   settingsToggle: { width: 44, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  settingsIcon: { fontSize: 25, lineHeight: 32, color: colors.primary },
   tabs: { flexDirection: 'row', paddingHorizontal: 14, gap: 12 },
   tab: { flex: 1, minHeight: 44, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: 'transparent', justifyContent: 'center' },
   tabText: { fontSize: 11, lineHeight: 22, textAlign: 'center', color: colors.muted },
   settingsPanel: { maxHeight: 330, flexGrow: 0, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surfaceSubtle },
-  settingsContent: { padding: 16, gap: 16, maxWidth: 650, width: '100%', alignSelf: 'center' },
-  settingsSection: { gap: 6 },
-  settingsOptions: { flexDirection: 'row', gap: 8 },
-  settingsOption: { flex: 1, minHeight: 48, padding: 8, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 7 },
+  settingsContent: { paddingHorizontal: 16, paddingVertical: 4, maxWidth: 650, width: '100%', alignSelf: 'center' },
+  settingsSection: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  menuRowLabel: { flexDirection: 'row', alignItems: 'center', gap: 10, flexBasis: 112, flexGrow: 1 },
+  menuLabelText: { flexShrink: 1 },
+  settingsOptions: { flexDirection: 'row', gap: 3, padding: 3, flexBasis: 184, flexGrow: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 9 },
+  settingsOption: { flex: 1, minHeight: 44, paddingHorizontal: 8, paddingVertical: 6, justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', borderRadius: 6 },
   settingsOptionText: { fontSize: 13, lineHeight: 28, color: colors.primary, textAlign: 'center' },
+  menuAbout: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingVertical: 12 },
   eyebrow: { fontSize: 10, letterSpacing: .8, color: colors.muted, lineHeight: 23 },
   title: { fontSize: 29, lineHeight: 46, letterSpacing: -.6, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },
   burmeseTitle: { fontSize: 26, lineHeight: 46, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },

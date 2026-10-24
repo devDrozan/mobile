@@ -8,7 +8,7 @@ Choose a language and Normal, DB, or DC, enter employment details, complete the 
 
 No account is required. Calculations need a connection to the API. Entries stay in memory while consulting guidance and returning to the calculator; only language and appearance preferences are saved on the device. Closing or reloading the app clears the calculation session. Fractional weekly hours remain intact while typing, and reported DC balances keep their entered decimal precision on results.
 
-Tap the settings gear to expand the language, appearance, and About controls; tap it again to collapse them. Choose English or Burmese and System, Light, or Dark appearance. System follows the device's appearance; the selected preference is remembered. Switching language or theme keeps the current calculation intact. About explains the app's purpose for Myanmar workers in South Korea and credits its creator, devrozan. Every screen includes the current-year copyright notice.
+Tap the hamburger menu to expand three icon-labelled rows for Language, Appearance, and About us; tap it again to collapse them. Use the two-option controls to choose English or Burmese and Light or Dark. Appearance initially follows the device until you make an explicit choice; your selected language and appearance are remembered. Switching either keeps the current calculation intact. About us explains the app's purpose for Myanmar workers in South Korea and credits its creator, devrozan. Every screen includes the current-year copyright notice.
 
 ## Development
 

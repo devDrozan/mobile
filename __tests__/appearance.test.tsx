@@ -73,57 +73,74 @@ it('ignores invalid saved values and still changes appearance when storage fails
   expect(screen.getByTestId('appearance')).toHaveTextContent('dark/dark');
 });
 
-it.each(['en', 'my'])('collapses preferences under the localized settings control in %s', async language => {
+it.each(['en', 'my'])('collapses icon-labelled preferences under the localized menu in %s', async language => {
   await act(() => i18n.changeLanguage(language));
   await render(<AppThemeProvider><Header /></AppThemeProvider>);
-  const toggle = screen.getByRole('button', { name: i18n.t('settings') });
+  const toggle = screen.getByRole('button', { name: i18n.t('menu') });
   expect(toggle).not.toBeExpanded();
   expect(screen.queryByRole('radio')).toBeNull();
-  expect(screen.queryByRole('button', { name: i18n.t('about') })).toBeNull();
+  expect(screen.queryByRole('button', { name: i18n.t('aboutUs') })).toBeNull();
   await fireEvent.press(toggle);
   expect(toggle).toBeExpanded();
   expect(screen.getByRole('radio', { name: language === 'en' ? 'English' : 'မြန်မာ' })).toBeChecked();
-  expect(screen.getByRole('radio', { name: i18n.t('themeSystem') })).toBeChecked();
+  expect(screen.getByRole('radio', { name: i18n.t('themeLight') })).toBeChecked();
+  expect(screen.getAllByRole('radio')).toHaveLength(4);
+  expect(screen.queryByRole('radio', { name: i18n.t('themeSystem') })).toBeNull();
   await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeDark') }));
   expect(screen.getByRole('radio', { name: i18n.t('themeDark') })).toBeChecked();
   expect(toggle).toBeExpanded();
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'dark');
   await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeLight') }));
   expect(screen.getByRole('radio', { name: i18n.t('themeLight') })).toBeChecked();
-  await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeSystem') }));
-  expect(screen.getByRole('radio', { name: i18n.t('themeSystem') })).toBeChecked();
   await fireEvent.press(toggle);
   expect(toggle).not.toBeExpanded();
   expect(screen.queryByRole('radio')).toBeNull();
-  expect(screen.queryByRole('button', { name: i18n.t('about') })).toBeNull();
+  expect(screen.queryByRole('button', { name: i18n.t('aboutUs') })).toBeNull();
 });
 
-it('closes settings when opening a primary tab or About', async () => {
+it('shows the resolved device theme until either theme option is explicitly selected', async () => {
+  jest.mocked(AsyncStorage.getItem).mockResolvedValueOnce('system');
+  jest.mocked(useColorScheme).mockReturnValue('dark');
+  const tree = () => <AppThemeProvider><Header /></AppThemeProvider>;
+  const view = await render(tree());
+  await fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
+  expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
+  jest.mocked(useColorScheme).mockReturnValue('light');
+  await view.rerender(tree());
+  expect(screen.getByRole('radio', { name: 'Light' })).toBeChecked();
+  await fireEvent.press(screen.getByRole('radio', { name: 'Light' }));
+  expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'light');
+  jest.mocked(useColorScheme).mockReturnValue('dark');
+  await view.rerender(tree());
+  expect(screen.getByRole('radio', { name: 'Light' })).toBeChecked();
+});
+
+it('closes the menu when opening a primary tab or About us', async () => {
   await render(<AppThemeProvider><Header /></AppThemeProvider>);
-  const toggle = screen.getByRole('button', { name: 'Settings' });
+  const toggle = screen.getByRole('button', { name: 'Menu' });
   await fireEvent.press(toggle);
   await fireEvent.press(screen.getByRole('button', { name: i18n.t('guide') }));
   expect(router.navigate).toHaveBeenCalledWith('/guide');
   expect(toggle).not.toBeExpanded();
   await fireEvent.press(toggle);
-  await fireEvent.press(screen.getByRole('button', { name: 'About' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'About us' }));
   expect(router.navigate).toHaveBeenCalledWith('/about');
   expect(toggle).not.toBeExpanded();
 });
 
-it('closes settings when navigation happens outside the header', async () => {
+it('closes the menu when navigation happens outside the header', async () => {
   jest.mocked(usePathname).mockReturnValue('/about');
   const tree = () => <AppThemeProvider><Header /></AppThemeProvider>;
   const view = await render(tree());
-  await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
-  expect(screen.getByRole('button', { name: 'Settings' })).toBeExpanded();
+  await fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
+  expect(screen.getByRole('button', { name: 'Menu' })).toBeExpanded();
   jest.mocked(usePathname).mockReturnValue('/');
   await view.rerender(tree());
-  expect(screen.getByRole('button', { name: 'Settings' })).not.toBeExpanded();
+  expect(screen.getByRole('button', { name: 'Menu' })).not.toBeExpanded();
   expect(screen.queryByRole('radio')).toBeNull();
 });
 
-it('retains the current wage draft and step through settings, language changes and About navigation', async () => {
+it('retains the current wage draft and step through menu, language changes and About us navigation', async () => {
   const context: Context = {
     method: 'normal', retirementDate: '2017-09-16', employmentDays: 1080, lookbackStart: '2017-06-16', lookbackDays: 92,
     eligibility: { status: 'eligible', reasons: [] },
@@ -134,17 +151,17 @@ it('retains the current wage draft and step through settings, language changes a
   const view = await render(route(true));
   await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
   await fireEvent.changeText(screen.getByLabelText('Base pay'), '123456.789012');
-  await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
   await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));
   expect(screen.getByLabelText('Base pay')).toHaveDisplayValue('123456.789012');
   await fireEvent.press(screen.getByRole('radio', { name: 'မြန်မာ' }));
-  expect(screen.getByRole('button', { name: i18n.t('settings') })).toBeExpanded();
+  expect(screen.getByRole('button', { name: i18n.t('menu') })).toBeExpanded();
   expect(screen.getByLabelText(i18n.t('basePay'))).toHaveDisplayValue('123456.789012');
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('about') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('aboutUs') }));
   expect(router.navigate).toHaveBeenCalledWith('/about');
   await view.rerender(route(false));
   expect(screen.getByText(i18n.t('aboutCreator'))).toBeOnTheScreen();
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('settings') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('menu') }));
   await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeLight') }));
   await fireEvent.press(screen.getByRole('radio', { name: 'English' }));
   await fireEvent.press(screen.getByRole('button', { name: i18n.t('returnCalculator') }));
