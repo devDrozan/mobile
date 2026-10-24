@@ -28,6 +28,16 @@ beforeEach(async () => {
   jest.mocked(getContext).mockImplementation(async input => ({ ...context, method: input.method }));
 });
 
+it.each(['en', 'my'])('keeps the editable %s hero wording intact and allows natural wrapping', async language => {
+  await act(() => i18n.changeLanguage(language));
+  await renderCalculator();
+  const hero = screen.getByRole('header', { name: i18n.t('hero') });
+  expect(hero.props.children).toBe(i18n.t('hero'));
+  expect(hero.props.numberOfLines).toBeUndefined();
+  expect(hero.props.adjustsFontSizeToFit).not.toBe(true);
+  expect(hero.props.allowFontScaling).not.toBe(false);
+});
+
 it('retains every wage field through Back and unchanged employment, and reviews exact decimals', async () => {
   await renderCalculator();
   await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
