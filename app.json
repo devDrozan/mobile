@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ထွယ်ဂျီဂွမ်Caculator",
+    "name": "E9 Mate Myanmar",
     "slug": "e9-severance-calculator",
     "scheme": "e9severance",
     "version": "0.1.0",
@@ -15,14 +15,43 @@
         "backgroundColor": "#123c35",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.e9mate.myanmar"
     },
-    "plugins": ["expo-router", "expo-system-ui", "expo-status-bar"],
-    "experiments": { "typedRoutes": true },
+    "plugins": [
+      "expo-router",
+      "expo-system-ui",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 128,
+          "resizeMode": "contain",
+          "backgroundColor": "#f7f8f4",
+          "dark": {
+            "backgroundColor": "#101a16"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "69189198-1f10-48e8-9ee6-9d32d2a8cb68"
+      }
     }
   }
 }
