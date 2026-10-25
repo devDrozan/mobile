@@ -12,6 +12,8 @@ Tap the hamburger menu to expand three icon-labelled rows for Language, Appearan
 
 ## Development
 
+In the full workspace, first run `cd mobile` from `SeverancePayCaculator`. All commands below run from this mobile project directory, where `package.json` and `app.json` live. An independent clone of `devDrozan/mobile` already has this directory as its root.
+
 Use Node.js 24:
 
 ```sh
@@ -34,6 +36,7 @@ For a physical phone, run the API with `HOST=0.0.0.0` on a trusted development n
 ## Verification
 
 ```sh
+npx expo-doctor
 npm run contract:generate
 npm run typecheck
 npm run lint
