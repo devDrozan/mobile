@@ -1,3 +1,4 @@
+import { enterWages } from './helpers/enter-wages';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Button, Platform, StyleSheet, Text, useColorScheme, type TextStyle } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -151,7 +152,7 @@ it('retains the current wage draft and step through menu, language changes and A
   jest.mocked(getContext).mockResolvedValue(context);
   const route = (calculator: boolean) => <AppThemeProvider><CalculatorSessionProvider><Header />{calculator ? <CalculatorScreen /> : <AboutScreen />}</CalculatorSessionProvider></AppThemeProvider>;
   const view = await render(route(true));
-  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await enterWages();
   await fireEvent.changeText(screen.getByLabelText('Base pay'), '123456.789012');
   await fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
   await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));

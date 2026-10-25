@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentRef } from 'react';
-import { AccessibilityInfo, Keyboard, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { AccessibilityInfo, Keyboard, Platform, Pressable, ScrollView, Switch, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
@@ -12,12 +12,12 @@ import { Result, SummaryRow } from '../components/Result';
 import { Sources } from '../components/InfoContent';
 
 type Method = ContextInput['method'];
-const sample: EmploymentValues = { startDate: '2014-10-02', lastWorkingDate: '2017-09-15', weeklyHours: 40, hasSpecialCircumstances: false };
 
 export default function CalculatorScreen() {
   const { t, i18n } = useTranslation();
   const { colors, styles } = useUi();
   const isBurmese = i18n.resolvedLanguage === 'my';
+  const { width } = useWindowDimensions();
   const hero = t('hero');
   const {
     form, weeklyHoursText, setWeeklyHoursText, resetEmployment,
@@ -90,20 +90,19 @@ export default function CalculatorScreen() {
       else setAttention({ target: 'error' });
     } finally { setBusy(false); }
   }
-  async function prepare(employment: EmploymentValues, example = false) {
+  async function prepare(employment: EmploymentValues) {
     const prepared = await getContext({ method, employment });
     setContext(prepared); setResult(undefined);
     if (prepared.eligibility.status !== 'eligible') {
       setResult(await calculate({ method, employment } as CalculationInput)); goToStep(3); return;
     }
     const previous = draftContextRef.current;
-    setPeriodsChanged(!example && !!previous && previous.method === method && JSON.stringify(method === 'dc' ? previous.dcPeriods : previous.wagePeriods) !== JSON.stringify(method === 'dc' ? prepared.dcPeriods : prepared.wagePeriods));
-    setWages(example ? prepared.wagePeriods.map((p, index) => ({ startDate: p.startDate, endDate: p.endDate, basePay: index === 0 || index === 3 ? '1000000' : '2000000', allowances: index === 0 || index === 3 ? '180000' : '360000' })) : reconcileWages(draftContextRef.current, wages, prepared));
-    setYears(example ? prepared.dcPeriods.map(p => ({ year: p.year, wages: '30000000' })) : reconcileYears(draftContextRef.current, years, prepared));
-    if (example || draftContextRef.current?.method !== method || draftContextRef.current.retirementDate !== prepared.retirementDate) {
-      setBonus(example ? '4000000' : '0'); setLeave(example ? '300000' : '0'); setOrdinary('');
+    setPeriodsChanged(!!previous && previous.method === method && JSON.stringify(method === 'dc' ? previous.dcPeriods : previous.wagePeriods) !== JSON.stringify(method === 'dc' ? prepared.dcPeriods : prepared.wagePeriods));
+    setWages(reconcileWages(draftContextRef.current, wages, prepared));
+    setYears(reconcileYears(draftContextRef.current, years, prepared));
+    if (draftContextRef.current?.method !== method || draftContextRef.current.retirementDate !== prepared.retirementDate) {
+      setBonus('0'); setLeave('0'); setOrdinary('');
     }
-    if (example) { setBalance(''); setBalanceDate(''); }
     draftContextRef.current = prepared;
     setFieldErrors({}); goToStep(1);
   }
@@ -119,8 +118,8 @@ export default function CalculatorScreen() {
   }
 
   return <Screen ref={scroll} contentRef={content}>
-    <View><Copy style={styles.eyebrow}>{t('eyebrow')}</Copy><Copy accessibilityRole="header" accessibilityLabel={hero} style={isBurmese ? styles.burmeseTitle : styles.title}>{hero}</Copy><Copy style={styles.subtitle}>{t('heroSub')}</Copy></View>
-    <View style={styles.card}><View><Copy accessibilityRole="header" style={styles.heading}>{t('calculatorTitle')}</Copy><Copy style={styles.help}>{t('calculatorSub')}</Copy></View><Button secondary title={t('example')} busy={busy} onPress={() => void run(async () => { resetEmployment(sample); await prepare(sample, true); })} />
+    <View><Copy style={styles.eyebrow}>{t('eyebrow')}</Copy><Copy accessibilityRole="header" accessibilityLabel={hero} style={isBurmese ? [styles.burmeseTitle, width < 360 && { fontSize: 24 }] : styles.title}>{hero}</Copy><Copy style={styles.subtitle}>{t('heroSub')}</Copy></View>
+    <View style={styles.card}><View><Copy accessibilityRole="header" style={styles.heading}>{t('calculatorTitle')}</Copy><Copy style={styles.help}>{t('calculatorSub')}</Copy></View>
       <Copy style={styles.eyebrow}>{t('planLabel')}</Copy>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8 }}>{(['normal', 'db', 'dc'] as const).map(m => <Pressable key={m} accessibilityRole="radio" accessibilityLabel={`${t(m)} ${t(`${m}Sub`)}`} accessibilityState={{ checked: method === m, disabled: busy }} aria-checked={method === m} aria-disabled={busy} disabled={busy} onPress={() => { if (m !== method) reset(m); }} style={{ flex: 1, padding: 12, borderWidth: 1, borderColor: method === m ? colors.selectedBorder : colors.border, backgroundColor: method === m ? colors.selected : colors.surface, borderRadius: 8 }}><Copy style={styles.smallHeading}>{t(m)}</Copy><Copy style={{ fontSize: 10, lineHeight: 21, color: colors.muted }}>{t(`${m}Sub`)}</Copy></Pressable>)}</View>
       <Pressable accessibilityRole="button" onPress={() => router.navigate('/guide')}><Copy style={{ fontSize: 11, color: colors.link }}>{t('planHelp')} ↗</Copy></Pressable>

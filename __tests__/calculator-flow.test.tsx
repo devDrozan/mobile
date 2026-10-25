@@ -1,3 +1,4 @@
+import { enterWages } from './helpers/enter-wages';
 import { act, render, screen, fireEvent } from '@testing-library/react-native';
 import i18n from '../src/i18n';
 import CalculatorScreen from '../src/app/index';
@@ -36,11 +37,12 @@ it.each(['en', 'my'])('keeps the editable %s hero wording intact and allows natu
   expect(hero.props.numberOfLines).toBeUndefined();
   expect(hero.props.adjustsFontSizeToFit).not.toBe(true);
   expect(hero.props.allowFontScaling).not.toBe(false);
+  expect(screen.queryByRole('button', { name: i18n.t('example') })).toBeNull();
 });
 
 it('retains every wage field through Back and unchanged employment, and reviews exact decimals', async () => {
   await renderCalculator();
-  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await enterWages();
   await fireEvent.changeText(screen.getAllByLabelText('Base pay')[0], '1000000.50');
   await fireEvent.changeText(screen.getByLabelText('Eligible bonuses in the previous 12 months'), '2000000.123456');
   await fireEvent.changeText(screen.getByLabelText(/Daily ordinary wage, if known/), '10000.50');
@@ -60,7 +62,7 @@ it('retains every wage field through Back and unchanged employment, and reviews 
 
 it('gives amount-specific inline errors and translates them without discarding the draft', async () => {
   await renderCalculator();
-  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await enterWages();
   await fireEvent.changeText(screen.getAllByLabelText('Base pay')[0], '-1');
   await fireEvent.changeText(screen.getByLabelText(/Daily ordinary wage, if known/), '0.000000');
   await fireEvent.press(screen.getByRole('button', { name: 'Review my details' }));
@@ -78,7 +80,7 @@ it('gives amount-specific inline errors and translates them without discarding t
 it('associates a DC balance-date error with its field and preserves yearly wages', async () => {
   await renderCalculator();
   await fireEvent.press(screen.getByRole('radio', { name: 'DC Defined contribution pension' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await enterWages();
   await fireEvent.changeText(screen.getAllByLabelText('Gross wages earned')[0], '999999999999999.123456');
   await fireEvent.changeText(screen.getByLabelText(/Reported DC account balance/), '1000.50');
   await fireEvent.changeText(screen.getByLabelText('Statement date'), '2025-02-30');
@@ -96,7 +98,7 @@ it('associates a DC balance-date error with its field and preserves yearly wages
 
 it('returns structured API amount errors to the editable wage field', async () => {
   await renderCalculator();
-  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await enterWages();
   await fireEvent.press(screen.getByRole('button', { name: 'Review my details' }));
   jest.mocked(calculate).mockRejectedValueOnce(new ApiFailure([{ field: 'wages.0.basePay', code: 'INVALID_VALUE' }]));
   await fireEvent.press(screen.getByRole('button', { name: 'Calculate my estimate' }));
@@ -134,7 +136,7 @@ it('preserves a decimal point during sequential hours entry and submits the inte
 it('retains a reviewed wage draft when guidance unmounts the calculator route', async () => {
   const route = (showCalculator: boolean) => <CalculatorSessionProvider>{showCalculator ? <CalculatorScreen /> : null}</CalculatorSessionProvider>;
   const view = await render(route(true));
-  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await enterWages();
   await fireEvent.changeText(screen.getAllByLabelText('Base pay')[0], '123456.789012');
   await fireEvent.changeText(screen.getByLabelText('Eligible bonuses in the previous 12 months'), '2000000.123456');
   await fireEvent.press(screen.getByRole('button', { name: 'Review my details' }));
@@ -154,7 +156,7 @@ it('retains the DC scheme, yearly wages, balance and statement date across route
   const route = (showCalculator: boolean) => <CalculatorSessionProvider>{showCalculator ? <CalculatorScreen /> : null}</CalculatorSessionProvider>;
   const view = await render(route(true));
   await fireEvent.press(screen.getByRole('radio', { name: 'DC Defined contribution pension' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Try an example' }));
+  await enterWages();
   await fireEvent.changeText(screen.getAllByLabelText('Gross wages earned')[0], '18000000.123456');
   await fireEvent.changeText(screen.getByLabelText(/Reported DC account balance/), '12000000.50');
   await fireEvent.changeText(screen.getByLabelText('Statement date'), '2025-12-31');
