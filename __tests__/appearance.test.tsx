@@ -8,6 +8,7 @@ import { AppThemeProvider, useAppTheme } from '../src/theme';
 import { darkColors, lightColors } from '../src/theme-colors';
 import { Copy, Header } from '../src/components/ui';
 import AboutScreen from '../src/app/about';
+import { InfoContent } from '../src/components/InfoContent';
 import { CalculatorSessionProvider } from '../src/calculator-session';
 import CalculatorScreen from '../src/app/index';
 import { getContext, type Context } from '../src/api/client';
@@ -229,6 +230,35 @@ it('protects native Myanmar body and heading marks from inherited fixed line box
     expect(style.lineHeight).toBeUndefined();
     expect(style.letterSpacing).toBeUndefined();
     expect(text.props.nativeMyanmarLineMetrics).toBeUndefined();
+  }
+});
+
+it.each([
+  ['ios', 'my', 'guide'], ['ios', 'my', 'insurance'],
+  ['android', 'my', 'guide'], ['android', 'my', 'insurance'],
+  ['ios', 'en', 'guide'], ['ios', 'en', 'insurance'],
+] as const)('keeps %s %s %s prose clear without clipping or font shrinking', async (platform, language, view) => {
+  jest.replaceProperty(Platform, 'OS', platform);
+  await act(() => i18n.changeLanguage(language));
+  await render(<InfoContent view={view} />);
+  const keys = view === 'guide'
+    ? ['guideSub', 'normalGuide', 'dbGuide', 'dcGuide', 'eligibilityGuide']
+    : ['insuranceSub', 'insuranceBody', 'insuranceBody2'];
+  for (const key of keys) {
+    const paragraph = screen.getByText(i18n.t(key));
+    const style = StyleSheet.flatten<TextStyle>(paragraph.props.style) ?? {};
+    expect(style.fontSize).toBeGreaterThanOrEqual(13);
+    expect(paragraph.props.numberOfLines).toBeUndefined();
+    expect(paragraph.props.adjustsFontSizeToFit).not.toBe(true);
+    expect(paragraph.props.allowFontScaling).not.toBe(false);
+    if (platform === 'ios' && language === 'my') {
+      expect(style.lineHeight).toBeUndefined();
+      expect(style.letterSpacing).toBeUndefined();
+    } else if (language === 'my') {
+      expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize! * 2.184);
+    } else {
+      expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize! * 1.4);
+    }
   }
 });
 
