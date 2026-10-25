@@ -6,12 +6,12 @@
     "@expo-google-fonts/noto-sans-myanmar": "^0.4.2",
     "@hookform/resolvers": "^5.2.0",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "expo": "~58.0.16",
-    "expo-constants": "~58.0.12",
-    "expo-font": "~58.0.9",
-    "expo-linking": "~58.0.13",
-    "expo-router": "~58.0.24",
-    "expo-status-bar": "~58.0.3",
+    "expo": "~58.0.19",
+    "expo-constants": "~58.0.13",
+    "expo-font": "~58.0.10",
+    "expo-linking": "~58.0.14",
+    "expo-router": "~58.0.26",
+    "expo-status-bar": "~58.0.4",
     "expo-system-ui": "~58.0.6",
     "i18next": "^25.0.0",
     "openapi-fetch": "^0.14.0",
@@ -32,7 +32,7 @@
     "eslint": "^9.39.5",
     "eslint-config-expo": "~58.0.4",
     "jest": "~30.5.1",
-    "jest-expo": "~58.0.11",
+    "jest-expo": "~58.0.12",
     "openapi-typescript": "^7.13.0",
     "typescript": "~5.9.3"
   },
@@ -46,6 +46,13 @@
     "lint": "expo lint",
     "test": "jest --runInBand --watchman=false",
     "contract:generate": "openapi-typescript contract/openapi.json -o src/api/schema.d.ts"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    }
   },
   "private": true
 }

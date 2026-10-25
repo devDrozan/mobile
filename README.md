@@ -48,6 +48,8 @@ npm run build
 
 To update API types, replace `contract/openapi.json` with the chosen API release artifact and run `npm run contract:generate`. Generated types live in `src/api/schema.d.ts`.
 
+TypeScript stays on 5.9 because `openapi-typescript@7.13.0` and `react-i18next@15.7.4` declare TypeScript 5 peer support. SDK 58 recommends TypeScript 6, so `expo.install.exclude` explicitly exempts this development dependency from version recommendations. Remove the exception when both dependencies support TypeScript 6; keep running typecheck, contract generation, tests, and platform exports in the meantime. Other Expo packages follow SDK 58's recommended versions.
+
 ## Upstream tooling advisories
 
-At initial verification on 2026-10-24, `npm audit` reports seven transitive advisory entries in Expo's CLI/configuration tooling: four high entries related to `node-forge` signature verification, and three moderate entries through `xcode` / `uuid`. The current published `node-forge` release has no compatible fix. The suggested forced Expo downgrade is incompatible with this SDK and has not been applied. Recheck these upstream advisories before signing or publishing native releases; they do not affect the independently deployed calculation API. API and web dependency audits were clean at this verification.
+After the SDK 58 patch update on 2026-10-25, `npm audit` reports five high advisory entries through Expo's CLI, involving `node-forge` signature verification and a nested Zod version. The app's direct Zod dependency is outside the reported affected range. npm's suggested forced Expo downgrade is incompatible with this SDK and has not been applied. Recheck these upstream advisories before signing or publishing native releases; the independently deployed calculation API has its own dependency checks.

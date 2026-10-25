@@ -17,7 +17,7 @@
       },
       "predictiveBackGestureEnabled": false
     },
-    "plugins": ["expo-router", "expo-system-ui"],
+    "plugins": ["expo-router", "expo-system-ui", "expo-status-bar"],
     "experiments": { "typedRoutes": true },
     "web": {
       "bundler": "metro",
