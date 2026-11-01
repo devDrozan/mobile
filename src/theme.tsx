@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { darkColors, lightColors, type ThemeColors } from './theme-colors';
+import { readPreference } from './preferences';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 type AppTheme = {
@@ -23,10 +24,10 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
-    void AsyncStorage.getItem(preferenceKey).then(value => {
+    void readPreference(preferenceKey).then(value => {
       if (active && !userSelectedRef.current && validMode(value)) setStoredMode(value);
-    }).catch(() => { /* Appearance still works when device storage is unavailable. */ })
-      .finally(() => { if (active) setReady(true); });
+      if (active) setReady(true);
+    });
     return () => { active = false; };
   }, []);
 

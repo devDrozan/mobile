@@ -5,5 +5,5 @@ import { Button, Screen } from '../components/ui';
 
 export default function AboutScreen() {
   const { t } = useTranslation();
-  return <Screen><AboutContent /><Button title={t('returnCalculator')} secondary onPress={() => router.navigate('/')} /></Screen>;
+  return <Screen><AboutContent /><Button title={t('hub.backHome')} secondary onPress={() => router.navigate('/')} /></Screen>;
 }

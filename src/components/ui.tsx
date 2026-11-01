@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState, type ComponentRef, type PropsWithChildren, type Ref } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextProps, type TextInputProps } from 'react-native';
+import { useMemo, useState, type ComponentRef, type PropsWithChildren, type Ref } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextProps, type TextStyle, type TextInputProps } from 'react-native';
 import { usePathname, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../i18n';
@@ -11,16 +11,44 @@ export function useUi() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   return { colors, styles };
 }
-export function Copy({ style, nativeMyanmarLineMetrics = false, ...props }: TextProps & { nativeMyanmarLineMetrics?: boolean; ref?: Ref<ComponentRef<typeof Text>> }) {
+// Noto Sans Myanmar carries 1324 ascent + 860 descent per 1000 units, so a line
+// box smaller than 2.184em cuts stacked marks on Android. iOS keeps the font's own
+// metrics instead of a fixed box.
+export const myanmarLineHeightFactor = 2.184;
+const latinDisplayFonts = ['Georgia', 'serif'];
+type MutableTextStyle = { -readonly [Key in keyof TextStyle]: TextStyle[Key] };
+
+export function Copy({ style, nativeMyanmarLineMetrics = false, fixedMetrics = false, ...props }: TextProps & { nativeMyanmarLineMetrics?: boolean; fixedMetrics?: boolean; ref?: Ref<ComponentRef<typeof Text>> }) {
   const { i18n } = useTranslation();
   const { styles } = useUi();
-  if (Platform.OS === 'ios' && i18n.resolvedLanguage === 'my' && (props.accessibilityRole === 'header' || nativeMyanmarLineMetrics)) {
-    // Fixed line boxes clip this font's upper combining marks on iOS. Preserve
-    // the font's own line metrics and shaping instead of inheriting Latin spacing.
-    const naturalMetricStyle = StyleSheet.flatten([styles.copy, style]);
-    return <Text {...props} style={{ ...naturalMetricStyle, lineHeight: undefined, letterSpacing: undefined }} />;
+  const burmese = i18n.resolvedLanguage === 'my';
+  if (fixedMetrics) return <Text {...props} style={[styles.copy, style]} />;
+  if (!burmese) {
+    // The legacy opt-in only ever affected Burmese shaping, so Latin prose keeps
+    // the line heights its own styles set.
+    void nativeMyanmarLineMetrics;
+    return <Text {...props} style={[styles.copy, style]} />;
   }
-  return <Text {...props} style={[styles.copy, style]} />;
+  // Fixed line boxes clip this font's upper combining marks on iOS. Preserve the
+  // font's own line metrics and shaping instead of inheriting Latin spacing. On
+  // Android, derive a box that clears the font's own ascent and descent.
+  const merged = StyleSheet.flatten([styles.copy, style]) ?? {};
+  const fontSize = merged.fontSize ?? 14;
+  // TextStyle marks its members read-only, so build the override in a mutable
+  // copy and hand React Native a plain style object.
+  const natural = { ...merged, letterSpacing: undefined } as MutableTextStyle;
+  // Georgian/serif display faces have no Myanmar glyphs and fall back to a
+  // different face, so Burmese headings keep the app's Myanmar display family.
+  if (latinDisplayFonts.includes(String(merged.fontFamily))) {
+    natural.fontFamily = 'NotoSansMyanmar_600SemiBold';
+    natural.fontWeight = undefined;
+  }
+  if (Platform.OS === 'ios') natural.lineHeight = undefined;
+  else {
+    const required = Math.ceil(fontSize * myanmarLineHeightFactor);
+    natural.lineHeight = Math.max(merged.lineHeight ?? 0, required);
+  }
+  return <Text {...props} style={natural} />;
 }
 export function Button({ title, onPress, secondary = false, busy = false, disabled = false }: { title: string; onPress: () => void; secondary?: boolean; busy?: boolean; disabled?: boolean }) {
   const { colors, styles } = useUi();
@@ -32,7 +60,7 @@ export function Field({ label, help, error, id, ref, ...props }: TextInputProps 
   const descriptions = [help && `${id}-help`, error && `${id}-error`].filter(Boolean).join(' ');
   return <View style={styles.field}><Copy style={styles.label}>{label}</Copy><TextInput ref={ref} nativeID={id} accessibilityLabel={label} accessibilityHint={[help, error].filter(Boolean).join(' ') || undefined} aria-invalid={!!error} aria-describedby={id && descriptions ? descriptions : undefined} autoCapitalize="none" autoCorrect={false} autoComplete="off" placeholderTextColor={colors.placeholder} selectionColor={colors.primary} keyboardAppearance={Platform.OS === 'ios' ? resolvedTheme : undefined} {...props} style={[styles.input, !!error && { borderColor: colors.error }, props.style]} />{!!help && <Copy nativeID={id ? `${id}-help` : undefined} style={styles.help}>{help}</Copy>}{!!error && <Copy nativeID={id ? `${id}-error` : undefined} accessibilityRole="alert" style={styles.error}>{error}</Copy>}</View>;
 }
-export function MoneyField(props: { label: string; value: string; onChangeText: (v: string) => void; help?: string; error?: string; id?: string; ref?: Ref<ComponentRef<typeof TextInput>> }) {
+export function MoneyField(props: { label: string; editable?: boolean; accessibilityLabel?: string; value: string; onChangeText: (v: string) => void; help?: string; error?: string; id?: string; ref?: Ref<ComponentRef<typeof TextInput>> }) {
   return <Field {...props} keyboardType="decimal-pad" maxLength={22} placeholder="0 KRW" />;
 }
 export function Screen({ children, ref, contentRef }: PropsWithChildren<{ ref?: Ref<ComponentRef<typeof ScrollView>>; contentRef?: Ref<ComponentRef<typeof View>> }>) {
@@ -52,92 +80,99 @@ function HeaderContent({ path }: { path: string }) {
   const { t, i18n } = useTranslation();
   const { colors, styles } = useUi();
   const { resolvedTheme, setMode } = useAppTheme();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const settingsToggle = useRef<ComponentRef<typeof View>>(null);
-  const tabs = [{ path: '/' as const, label: 'calculator' }, { path: '/guide' as const, label: 'guide' }, { path: '/insurance' as const, label: 'insurance' }];
-  const modeLabels = { light: 'themeLight', dark: 'themeDark' } as const;
-  function closeSettings(restoreFocus = false) {
-    setSettingsOpen(false);
-    if (restoreFocus) requestAnimationFrame(() => {
-      const target = settingsToggle.current;
-      target?.focus();
-      if (target && Platform.OS !== 'web') AccessibilityInfo.sendAccessibilityEvent(target, 'focus');
-    });
-  }
+  const [languageOpen, setLanguageOpen] = useState(false);
   return <View style={styles.header}>
-    <View style={styles.brandRow}>
-      <View style={styles.mark}><Copy style={styles.markText}>₩</Copy></View><Copy style={styles.brand}>{t('appName')}</Copy>
-      <Pressable ref={settingsToggle} accessibilityRole="button" accessibilityLabel={t('menu')} accessibilityState={{ expanded: settingsOpen }} aria-expanded={settingsOpen} onPress={() => settingsOpen ? closeSettings(true) : setSettingsOpen(true)} style={({ pressed }) => [styles.settingsToggle, settingsOpen && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><MenuIcon name={settingsOpen ? 'close' : 'menu'} color={colors.primary} /></Pressable>
+    <View style={styles.headerInner}>
+      <View style={styles.brandRow}>
+        <Copy fixedMetrics style={styles.brand}><Copy fixedMetrics style={styles.brandAccent}>E9</Copy> Mate</Copy>
+        <View style={styles.headerActions}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t(resolvedTheme === 'dark' ? 'hub.switchToLight' : 'hub.switchToDark')} onPress={() => setMode(resolvedTheme === 'dark' ? 'light' : 'dark')} style={({ pressed }) => [styles.headerAction, pressed && { opacity: .65 }]}><MenuIcon name="appearance" theme={resolvedTheme} background={colors.surface} color={colors.primary} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('language')} accessibilityState={{ expanded: languageOpen }} aria-expanded={languageOpen} onPress={() => setLanguageOpen(value => !value)} style={({ pressed }) => [styles.headerAction, languageOpen && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><MenuIcon name="language" color={colors.primary} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('hub.search')} onPress={() => { setLanguageOpen(false); router.navigate('/search'); }} style={({ pressed }) => [styles.headerActionAccent, pressed && { opacity: .8 }]}><MenuIcon name="search" color={colors.onAccent} /></Pressable>
+        </View>
+      </View>
+      {languageOpen && <View style={styles.languagePanel} accessibilityRole="radiogroup" accessibilityLabel={t('language')}>{(['en', 'my'] as const).map(language => {
+        const checked = i18n.resolvedLanguage === language;
+        const label = language === 'en' ? 'English' : 'မြန်မာ';
+        return <Pressable key={language} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ checked }} aria-checked={checked} onPress={() => { void changeLanguage(language); setLanguageOpen(false); }} style={[styles.languageOption, checked && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.languageOptionText}>{checked ? '✓ ' : ''}{label}</Copy></Pressable>;
+      })}</View>}
+      {path !== '/' && <Pressable accessibilityRole="button" accessibilityLabel={t('hub.backHome')} onPress={() => router.navigate('/')} style={({ pressed }) => [styles.homeLink, pressed && { opacity: .65 }]}><Copy style={styles.homeLinkText}>‹  {t('hub.backHome')}</Copy></Pressable>}
+      {(path === '/severance' || path === '/severance/guide' || path === '/guide') && <View accessibilityRole="tablist" style={styles.moduleTabs}>{([{ path: '/severance' as const, label: 'calculator' }, { path: '/severance/guide' as const, label: 'guide' }]).map(tab => {
+        const selected = path === tab.path || (path === '/guide' && tab.path === '/severance/guide');
+        return <Pressable key={tab.path} accessibilityRole="tab" accessibilityLabel={t(tab.label)} accessibilityState={{ selected }} onPress={() => { if (!selected) router.navigate(tab.path); }} style={({ pressed }) => [styles.moduleTab, selected && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><Copy style={[styles.moduleTabText, selected && { color: colors.primary }]}>{t(tab.label)}</Copy></Pressable>;
+      })}</View>}
     </View>
-    <View style={styles.tabs}>{tabs.map(tab => <Pressable key={tab.path} accessibilityRole="button" accessibilityState={{ selected: path === tab.path }} onPress={() => { closeSettings(); if (path !== tab.path) router.navigate(tab.path); }} style={[styles.tab, path === tab.path && { borderBottomColor: colors.selectedBorder }]}><Copy style={[styles.tabText, path === tab.path && { color: colors.primary }]}>{t(tab.label)}</Copy></Pressable>)}</View>
-    {settingsOpen && <ScrollView style={styles.settingsPanel} contentContainerStyle={styles.settingsContent} keyboardShouldPersistTaps="handled" onAccessibilityEscape={() => closeSettings(true)}>
-      <View style={styles.settingsSection}>
-        <View style={styles.menuRowLabel}><MenuIcon name="language" color={colors.primary} /><Copy style={[styles.label, styles.menuLabelText]}>{t('language')}</Copy></View>
-        <View accessibilityRole="radiogroup" accessibilityLabel={t('language')} style={styles.settingsOptions}>{(['en', 'my'] as const).map(language => {
-          const checked = i18n.resolvedLanguage === language;
-          const label = language === 'en' ? 'English' : 'မြန်မာ';
-          return <Pressable key={language} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ checked }} aria-checked={checked} onPress={() => void changeLanguage(language)} style={[styles.settingsOption, checked && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.settingsOptionText}>{checked ? '✓ ' : ''}{label}</Copy></Pressable>;
-        })}</View>
-      </View>
-      <View style={styles.settingsSection}>
-        <View style={styles.menuRowLabel}><MenuIcon name="appearance" color={colors.primary} /><Copy style={[styles.label, styles.menuLabelText]}>{t('appearance')}</Copy></View>
-        <View accessibilityRole="radiogroup" accessibilityLabel={t('appearance')} style={styles.settingsOptions}>{(['light', 'dark'] as const).map(nextMode => <Pressable key={nextMode} accessibilityRole="radio" accessibilityLabel={t(modeLabels[nextMode])} accessibilityState={{ checked: resolvedTheme === nextMode }} aria-checked={resolvedTheme === nextMode} onPress={() => setMode(nextMode)} style={[styles.settingsOption, resolvedTheme === nextMode && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.settingsOptionText}>{resolvedTheme === nextMode ? '✓ ' : ''}{t(modeLabels[nextMode])}</Copy></Pressable>)}</View>
-      </View>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('aboutUs')} onPress={() => { closeSettings(path === '/about'); if (path !== '/about') router.navigate('/about'); }} style={({ pressed }) => [styles.menuAbout, pressed && { opacity: .65 }]}><MenuIcon name="info" color={colors.primary} /><Copy style={[styles.label, { flex: 1 }]}>{t('aboutUs')}</Copy><MenuIcon name="chevron" color={colors.primary} /></Pressable>
-    </ScrollView>}
   </View>;
 }
-function MenuIcon({ name, color }: { name: 'menu' | 'close' | 'language' | 'appearance' | 'info' | 'chevron'; color: string }) {
-  const stroke = { borderColor: color, borderWidth: 1.5 };
-  const line = { position: 'absolute' as const, height: 1.5, backgroundColor: color, borderRadius: 1 };
+function MenuIcon({ name, color, theme, background }: { name: 'language' | 'appearance' | 'search'; color: string; theme?: 'light' | 'dark'; background?: string }) {
+  const stroke = { borderColor: color, borderWidth: 2 };
+  const line = { position: 'absolute' as const, height: 2, backgroundColor: color, borderRadius: 1 };
+  const moon = theme === 'dark';
   return <View accessible={false} aria-hidden importantForAccessibility="no-hide-descendants" style={{ width: 22, height: 22, flexShrink: 0 }}>
-    {name === 'menu' && [5, 10, 15].map(top => <View key={top} style={[line, { left: 2, right: 2, top }]} />)}
-    {name === 'close' && [-45, 45].map(angle => <View key={angle} style={[line, { left: 2, right: 2, top: 10, transform: [{ rotate: `${angle}deg` }] }]} />)}
-    {(name === 'language' || name === 'appearance' || name === 'info') && <View style={[stroke, { position: 'absolute', width: 20, height: 20, left: 1, top: 1, borderRadius: 10 }]} />}
+    {(name === 'language' || (name === 'appearance' && !moon)) && <View style={[stroke, { position: 'absolute', width: 20, height: 20, left: 1, top: 1, borderRadius: 10 }]} />}
     {name === 'language' && <><View style={[stroke, { position: 'absolute', width: 8, height: 20, left: 7, top: 1, borderRadius: 10 }]} /><View style={[line, { left: 2, right: 2, top: 10 }]} /></>}
-    {name === 'appearance' && <View style={{ position: 'absolute', left: 11, top: 2.5, width: 8.5, height: 17, borderTopRightRadius: 9, borderBottomRightRadius: 9, backgroundColor: color }} />}
-    {name === 'info' && <><View style={{ position: 'absolute', width: 2, height: 2, left: 10, top: 6, borderRadius: 1, backgroundColor: color }} /><View style={{ position: 'absolute', width: 1.5, height: 6, left: 10.25, top: 10, backgroundColor: color }} /></>}
-    {name === 'chevron' && <View style={{ position: 'absolute', width: 7, height: 7, left: 6, top: 7, borderTopWidth: 1.5, borderRightWidth: 1.5, borderColor: color, transform: [{ rotate: '45deg' }] }} />}
+    {/* A sun shows a light appearance is active; a moon shows dark, so the
+        header reflects the resolved theme rather than only the next action. */}
+    {name === 'appearance' && !moon && <>
+      <View style={[line, { left: 0, width: 4, top: 10 }]} /><View style={[line, { right: 0, width: 4, top: 10 }]} />
+      <View style={[line, { top: 0, height: 4, width: 2, left: 10 }]} /><View style={[line, { bottom: 0, height: 4, width: 2, left: 10 }]} />
+    </>}
+    {name === 'appearance' && moon && <>
+      <View style={[stroke, { position: 'absolute', width: 16, height: 16, left: 1, top: 3, borderRadius: 8 }]} />
+      <View style={{ position: 'absolute', width: 14, height: 14, left: 8, top: 1, borderRadius: 7, backgroundColor: background ?? 'transparent' }} />
+    </>}
+    {name === 'search' && <><View style={[stroke, { position: 'absolute', width: 13, height: 13, left: 2, top: 2, borderRadius: 7 }]} /><View style={[line, { width: 9, left: 13, top: 16, transform: [{ rotate: '45deg' }] }]} /></>}
   </View>;
 }
 function createStyles(colors: ThemeColors) { return StyleSheet.create({
   copy: { fontFamily: 'NotoSansMyanmar_400Regular', fontSize: 14, lineHeight: 25, color: colors.text },
-  screen: { padding: 20, paddingBottom: 45, gap: 20, maxWidth: 650, width: '100%', alignSelf: 'center' },
+  screen: { padding: 16, paddingBottom: 34, gap: 14, maxWidth: 650, width: '100%', alignSelf: 'center' },
   screenBackground: { backgroundColor: colors.background },
   header: { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, paddingVertical: 13 },
-  mark: { backgroundColor: colors.brandBackground, width: 33, height: 35, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-  markText: { color: colors.brandText, fontSize: 23, lineHeight: 33 },
-  brand: { fontSize: 13, fontFamily: 'NotoSansMyanmar_600SemiBold', flex: 1, lineHeight: 26 },
-  settingsToggle: { width: 44, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  tabs: { flexDirection: 'row', paddingHorizontal: 14, gap: 12 },
-  tab: { flex: 1, minHeight: 44, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: 'transparent', justifyContent: 'center' },
-  tabText: { fontSize: 11, lineHeight: 22, textAlign: 'center', color: colors.muted },
-  settingsPanel: { maxHeight: 330, flexGrow: 0, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surfaceSubtle },
-  settingsContent: { paddingHorizontal: 16, paddingVertical: 4, maxWidth: 650, width: '100%', alignSelf: 'center' },
-  settingsSection: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
-  menuRowLabel: { flexDirection: 'row', alignItems: 'center', gap: 10, flexBasis: 112, flexGrow: 1 },
-  menuLabelText: { flexShrink: 1 },
-  settingsOptions: { flexDirection: 'row', gap: 3, padding: 3, flexBasis: 184, flexGrow: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 9 },
-  settingsOption: { flex: 1, minHeight: 44, paddingHorizontal: 8, paddingVertical: 6, justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', borderRadius: 6 },
-  settingsOptionText: { fontSize: 13, lineHeight: 28, color: colors.primary, textAlign: 'center' },
-  menuAbout: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingVertical: 12 },
-  eyebrow: { fontSize: 10, letterSpacing: .8, color: colors.muted, lineHeight: 23 },
-  title: { fontSize: 29, lineHeight: 46, letterSpacing: -.6, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },
-  burmeseTitle: { fontSize: 26, lineHeight: 46, fontFamily: 'NotoSansMyanmar_600SemiBold', marginVertical: 8 },
-  subtitle: { fontSize: 13, color: colors.muted, lineHeight: 26 },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 13, padding: 20, gap: 18 },
-  heading: { fontSize: 18, lineHeight: 32, fontFamily: 'NotoSansMyanmar_600SemiBold' },
-  smallHeading: { fontSize: 14, lineHeight: 27, fontFamily: 'NotoSansMyanmar_600SemiBold' },
-  field: { gap: 7 }, label: { fontSize: 12, lineHeight: 24 },
-  input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 13, paddingVertical: 11, minHeight: 48, fontSize: 15, color: colors.text, fontFamily: 'NotoSansMyanmar_400Regular' },
+  headerInner: { width: '100%', maxWidth: 650, alignSelf: 'center' },
+  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6 },
+  brand: { fontSize: 22, fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif', fontWeight: '700', flex: 1, flexShrink: 1, lineHeight: 30, color: colors.primary },
+  brandAccent: { color: colors.primary, fontSize: 22, fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif', fontWeight: '700', lineHeight: 30 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerAction: { width: 44, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 22, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface },
+  headerActionAccent: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent },
+  languagePanel: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
+  languageOption: { flex: 1, minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  languageOptionText: { color: colors.primary, fontSize: 13, lineHeight: 27 },
+  homeLink: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center', alignSelf: 'flex-start' },
+  homeLinkText: { fontSize: 13, lineHeight: 26, color: colors.primary, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  moduleTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
+  moduleTab: { minHeight: 44, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', backgroundColor: colors.surface },
+  moduleTabText: { fontSize: 13, lineHeight: 26, color: colors.muted, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  heroPanel: { backgroundColor: colors.surfaceSubtle, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 15, gap: 3 },
+  eyebrow: { fontSize: 10, letterSpacing: 1.1, color: colors.muted, lineHeight: 22, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  title: { fontSize: 28, letterSpacing: -.5, fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif', fontWeight: '700', color: colors.text },
+  burmeseTitle: { fontSize: 25, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  subtitle: { fontSize: 13, color: colors.muted, lineHeight: 22, marginTop: 4 },
+  card: { backgroundColor: colors.surface, borderWidth: 0, borderRadius: 22, padding: 20, gap: 14, ...Platform.select({ ios: { shadowColor: '#1c2e24', shadowOpacity: .06, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } }, android: { elevation: 2 }, default: {} }) },
+  planRow: { flexDirection: 'row', gap: 8 },
+  planOption: { flex: 1, minHeight: 56, paddingHorizontal: 8, paddingVertical: 10, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  planHelp: { fontSize: 12, lineHeight: 22, color: colors.link, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  planHelpLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  progressRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', paddingVertical: 8, gap: 12 },
+  progressItem: { flexBasis: 0, flexGrow: 1, flexShrink: 1, maxWidth: 90, alignItems: 'center', gap: 6 },
+  progressBadge: { minWidth: 28, minHeight: 28, paddingHorizontal: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
+  progressNumber: { fontSize: 12, color: colors.muted, fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif', fontWeight: '600', textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false },
+  progressLabel: { fontSize: 11, lineHeight: 20, textAlign: 'center', color: colors.muted },
+  heading: { fontSize: 20, lineHeight: 32, fontFamily: 'NotoSansMyanmar_600SemiBold', color: colors.text },
+  displayHeading: { fontSize: 22, letterSpacing: -.3, fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif', fontWeight: '700', color: colors.text },
+  smallHeading: { fontSize: 14, lineHeight: 24, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  field: { gap: 7 }, label: { fontSize: 13, lineHeight: 22, color: colors.text },
+  input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 52, fontSize: 15, color: colors.text, fontFamily: 'NotoSansMyanmar_400Regular' },
   help: { fontSize: 11, lineHeight: 23, color: colors.muted }, error: { fontSize: 12, lineHeight: 24, color: colors.error },
   errorBox: { backgroundColor: colors.errorBackground, borderWidth: 1, borderColor: colors.errorBorder, borderRadius: 8, padding: 13 },
-  button: { paddingHorizontal: 18, paddingVertical: 13, minHeight: 49, borderRadius: 8, backgroundColor: colors.primary, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  button: { paddingHorizontal: 18, paddingVertical: 13, minHeight: 49, borderRadius: 12, backgroundColor: colors.primary, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   secondary: { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.secondaryBorder },
   buttonText: { color: colors.onPrimary, fontSize: 13, lineHeight: 26, textAlign: 'center', flexShrink: 1 },
   row: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   divider: { height: 1, backgroundColor: colors.divider },
   note: { padding: 15, backgroundColor: colors.surfaceSubtle, borderRadius: 8, gap: 5 },
+  switchRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  visuallyHidden: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 },
   footer: { borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: 16 },
 }); }

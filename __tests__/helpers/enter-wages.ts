@@ -6,10 +6,10 @@ export async function enterWages() {
   await fireEvent.changeText(screen.getByLabelText(i18n.t('startDate')), '2014-10-02');
   await fireEvent.changeText(screen.getByLabelText(i18n.t('lastWorkingDate')), '2017-09-15');
   await fireEvent.press(screen.getByRole('button', { name: i18n.t('continue') }));
-  for (const field of screen.queryAllByLabelText(i18n.t('basePay'))) {
+  for (const field of screen.queryAllByLabelText(i18n.t('basePay'), { exact: false })) {
     await fireEvent.changeText(field, '1000000');
   }
-  for (const field of screen.queryAllByLabelText(i18n.t('yearWages'))) {
+  for (const field of screen.queryAllByLabelText(i18n.t('yearWages'), { exact: false })) {
     await fireEvent.changeText(field, '30000000');
   }
 }

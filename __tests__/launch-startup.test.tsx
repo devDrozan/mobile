@@ -11,6 +11,7 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(async () => undefined), hideAsync: jest.fn(async () => undefined) }));
 jest.mock('expo-router', () => ({ Stack: () => { const { Text } = require('react-native'); return <Text>Main interface</Text>; } }));
 jest.mock('../src/components/ui', () => ({ Header: () => null }));
+jest.mock('../src/modules/hub/HubFooter', () => ({ HubFooter: () => null }));
 
 beforeEach(async () => {
   jest.useFakeTimers();
@@ -52,6 +53,15 @@ it('falls back when font loading and preference storage fail instead of trapping
   jest.spyOn(AsyncStorage, 'getItem').mockRejectedValue(new Error('Storage unavailable'));
   await render(<RootLayout />);
   await showAndWait();
+  expect(i18n.resolvedLanguage).toBe('en');
+  expect(screen.getByText('Main interface')).toBeVisible();
+});
+
+it('reveals the app when preference storage never answers', async () => {
+  jest.spyOn(AsyncStorage, 'getItem').mockReturnValue(new Promise<string | null>(() => undefined));
+  await render(<RootLayout />);
+  await showAndWait();
+  await act(async () => undefined);
   expect(i18n.resolvedLanguage).toBe('en');
   expect(screen.getByText('Main interface')).toBeVisible();
 });

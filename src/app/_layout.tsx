@@ -9,9 +9,12 @@ import { Header } from '../components/ui';
 import { CalculatorSessionProvider } from '../calculator-session';
 import { AppThemeProvider, useAppTheme } from '../theme';
 import { LaunchGate } from '../components/LaunchGate';
+import { HubFooter } from '../modules/hub/HubFooter';
 
 // Hold the native cover until our branded view has laid out.
 void SplashScreen.preventAutoHideAsync().catch(() => { /* Unsupported previews can continue. */ });
+
+export const unstable_settings = { anchor: 'index' };
 
 export default function RootLayout() {
   return <AppThemeProvider><SafeAreaProvider><ThemedLayout /></SafeAreaProvider></AppThemeProvider>;
@@ -26,6 +29,8 @@ function ThemedLayout() {
     void restoreLanguage().finally(() => { if (active) setLanguageReady(true); });
     return () => { active = false; };
   }, []);
-  if (!themeReady) return null;
-  return <><StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} /><LaunchGate ready={(loaded || !!error) && languageReady}><CalculatorSessionProvider><SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}><Header /><Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} /></SafeAreaView></CalculatorSessionProvider></LaunchGate></>;
+  // Render the branded view immediately: readiness gates only the interface, and
+  // preference reads have their own timeout, so a stalled store cannot leave the
+  // user on a blank screen behind the native splash.
+  return <><StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} /><LaunchGate ready={themeReady && languageReady && (loaded || !!error)}><CalculatorSessionProvider><SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}><Header /><Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} /><HubFooter /></SafeAreaView></CalculatorSessionProvider></LaunchGate></>;
 }

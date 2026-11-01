@@ -1,3 +1,2 @@
-import { Screen } from '../components/ui';
-import { InfoContent } from '../components/InfoContent';
-export default function GuideScreen() { return <Screen><InfoContent view="guide" /></Screen>; }
+// Preserve the existing deep link while guidance lives inside the Severance module.
+export { default } from '../modules/severance/GuideScreen';

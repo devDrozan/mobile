@@ -1,5 +1,105 @@
 {
-  "appName": "ထွယ်ဂျီဂွမ်Caculator",
+  "appName": "E9 Mate Myanmar",
+  "hub": {
+    "title": "Useful tools for life in Korea",
+    "intro": "Start with the tools available today. More support is on the way.",
+    "featured": "Featured tools",
+    "allTools": "All tools",
+    "servicesTitle": "Our Services",
+    "servicesIntro": "Tools and information for E-9 workers, all in one place.",
+    "comingIntro": "More support is on the way.",
+    "servicesTab": "Services",
+    "noticesTab": "Notices",
+    "noticesEmpty": "No notices yet. Updates from E9 Mate will appear here when they are ready.",
+    "usefulInfo": "USEFUL INFO",
+    "sampleAd": "SAMPLE AD · E9 MATE",
+    "learnMore": "Learn more",
+    "previousSlide": "Previous carousel card",
+    "nextSlide": "Next carousel card",
+    "hero": {
+      "severanceInfoTitle": "Know your severance pay.",
+      "severanceInfoBody": "A clear guide for E-9 workers in Korea.",
+      "severanceAdTitle": "Check your estimate.",
+      "severanceAdBody": "Plan your next step with a clear severance estimate.",
+      "insuranceInfoTitle": "Understand E-9 insurance.",
+      "insuranceInfoBody": "Learn how departure guarantee insurance relates to severance.",
+      "insuranceAdTitle": "Find trusted guidance.",
+      "insuranceAdBody": "See how E-9 insurance fits into your benefits."
+    },
+    "informationTitle": "Information",
+    "informationLabel": "Helpful information",
+    "promotionsTitle": "Promotions / Ads",
+    "housePromotion": "E9 Mate promotion · no paid ad",
+    "viewPlans": "View plans",
+    "search": "Search",
+    "searchTitle": "Find a service",
+    "searchPlaceholder": "Search services",
+    "searchHint": "Browse all services or enter a name.",
+    "searchResults": "Matching services",
+    "noResults": "No matching service",
+    "noResultsHint": "Try another word or return to Home.",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode",
+    "unknownService": "Service unavailable",
+    "unknownServiceHint": "This service could not be found.",
+    "plannedNotice": "This service is planned and is not ready to use yet. It does not collect any information.",
+    "information": {
+      "severanceTitle": "Understand severance pay",
+      "severanceBody": "Read how Normal, DB, and DC benefits work.",
+      "insuranceTitle": "E-9 insurance guidance",
+      "insuranceBody": "Find the EPS source and learn how departure guarantee insurance relates to severance."
+    },
+    "promotions": {
+      "severanceTitle": "Know what you have earned",
+      "severanceBody": "Try E9 Mate's severance estimate.",
+      "insuranceTitle": "Explore E-9 insurance",
+      "insuranceBody": "Read E9 Mate's insurance overview."
+    },
+    "available": "Available",
+    "comingSoon": "Coming soon",
+    "openTool": "Open tool",
+    "openNamed": "Open {{name}}",
+    "comingSoonNamed": "Coming soon: {{name}}",
+    "previous": "Previous tool",
+    "next": "Next tool",
+    "position": "{{current}} of {{total}}",
+    "home": "Home",
+    "backHome": "Back to Home",
+    "modules": {
+      "severance": {
+        "title": "Severance Calculator",
+        "description": "Estimate Normal, DB, or DC severance benefits."
+      },
+      "insurance": {
+        "title": "E-9 Insurance",
+        "description": "Learn about E-9 insurance and find official EPS guidance."
+      },
+      "work": {
+        "title": "Work Time Notes",
+        "description": "Record shifts, breaks, and hours."
+      },
+      "salary": {
+        "title": "Estimated Salary",
+        "description": "Review estimated pay and a salary breakdown."
+      },
+      "workSalary": {
+        "title": "Salary Estimate from Work Time",
+        "description": "Estimate salary from recorded work hours."
+      },
+      "exchange": {
+        "title": "Currency Exchange",
+        "description": "Check KRW–MMK rates and convert amounts."
+      },
+      "finance": {
+        "title": "Finance & Reminders",
+        "description": "Track savings and important dates."
+      },
+      "information": {
+        "title": "Worker Information Center",
+        "description": "Find reviewed administrative guidance."
+      }
+    }
+  },
   "brandSubtitle": "E-9 WORKER SUPPORT",
   "tagline": "A little clarity. A better tomorrow.",
   "toolkit": "YOUR WORKER TOOLKIT",
@@ -23,6 +123,11 @@
   "dc": "DC",
   "dcSub": "Defined contribution pension",
   "planHelp": "Not sure which plan you have?",
+  "planChangeTitle": "Change retirement plan?",
+  "planChangeBody": "Changing the plan clears the wages you entered. This cannot be undone.",
+  "keepPlan": "Keep current plan",
+  "changePlan": "Change plan",
+  "stepOf": "Step {{current}} of {{total}}",
   "employment": "Employment",
   "wages": "Wages",
   "review": "Review",
@@ -151,8 +256,84 @@
   "aboutTitle": "About this app",
   "aboutCreator": "Created by devrozan",
   "aboutPurposeTitle": "Purpose",
-  "aboutPurpose": "Built to help Myanmar workers in South Korea understand their severance pay and retirement benefits more easily.",
-  "aboutScopeDetails": "The app explains Normal, DB and DC calculations in English and Burmese.",
+  "aboutPurpose": "E9 Mate Myanmar brings practical employment, financial, and administrative tools together for Myanmar workers in South Korea.",
+  "aboutScopeDetails": "Available now: Normal, DB, and DC severance calculations and E-9 insurance information in English and Burmese. Other tools are planned.",
   "aboutScopeEstimate": "Results are estimates before tax, in Korean won.",
-  "copyright": "© {{year}} devrozan"
+  "returnHome": "Back to Home",
+  "copyright": "© {{year}} devrozan",
+  "salary": {
+    "title": "Salary Estimate from Work Time",
+    "paySettings": "Monthly pay settings",
+    "basicSalary": "Basic monthly salary",
+    "normalRate": "Normal hourly rate (reference only)",
+    "overtimeRate": "Weekday overtime hourly rate",
+    "saturdayRate": "Saturday hourly rate",
+    "sundayRate": "Sunday hourly rate",
+    "nightRate": "Extra night premium per hour",
+    "rules": "Full basic salary covers normal weekday hours. Weekend rates pay all weekend hours once. Night pay is an extra premium on overlapping hours. Normal hourly rate is reference-only. Missing dates never reduce the base.",
+    "exclusions": "User-rate gross estimate only. No tax, insurance, absence deductions, partial-month proration, public-holiday rules, or automatic statutory rates.",
+    "disclosure": "Work records and pay settings stay on this device until deleted. No cloud sync. Calculate sends only the selected month to the API; estimates are not saved. Records work offline; calculation needs internet.",
+    "accept": "I understand local storage and selected-month submission.",
+    "accepted": "Local-storage disclosure accepted.",
+    "consentRequired": "Accept the storage and submission disclosure first.",
+    "calendar": "Daily work calendar",
+    "hoursHelp": "Use up to 2 decimal places. Normal + overtime cannot exceed 24 hours per date. Night hours overlap those hours. Split overnight work onto actual Korean calendar dates.",
+    "normalHours": "Normal work hours",
+    "overtimeHours": "Overtime work hours",
+    "nightHours": "Overlapping night hours",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "showList": "Show accessible date list",
+    "showCalendar": "Show calendar",
+    "recorded": "Recorded",
+    "deleteDay": "Remove this day from draft",
+    "saveMonth": "Save this month on device",
+    "saved": "Month saved on this device.",
+    "unsaved": "Unsaved changes. Save this month to keep them.",
+    "deleted": "Records deleted.",
+    "loading": "Loading local records…",
+    "storageFailed": "Local storage failed. Your draft is retained. Retry loading or saving.",
+    "nativeOnly": "This Expo preview needs native SQLite. Use Android/iOS or the separate web/PWA for saved work records.",
+    "retryLoad": "Retry loading local records",
+    "requestFailed": "Could not calculate. Your entries are retained; check internet and tap Calculate again.",
+    "checkFields": "Check the highlighted fields.",
+    "summary": "Monthly summary",
+    "recordCount": "{{count}} recorded day",
+    "recordCount_other": "{{count}} recorded days",
+    "estimateHelp": "Full basic salary plus extra pay from recorded dates only. Calculate does not save your draft.",
+    "calculate": "Calculate / Retry estimate",
+    "estimate": "Estimated gross monthly salary",
+    "hours": "hours",
+    "rounding": "Total rounded down once to whole KRW",
+    "deleteMonth": "Delete selected month",
+    "deleteAll": "Delete all work and pay records",
+    "deleteConfirm": "Permanently delete the selected local records and pay settings? This cannot be undone.",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete",
+    "components": {
+      "base": "Full basic salary",
+      "weekdayOvertime": "Weekday overtime pay",
+      "saturday": "Saturday pay",
+      "sunday": "Sunday pay",
+      "night": "Extra night premium"
+    },
+    "totals": {
+      "normal": "All recorded normal hours",
+      "weekdayOvertime": "Weekday overtime hours",
+      "saturday": "Saturday worked hours",
+      "sunday": "Sunday worked hours",
+      "night": "Overlapping night hours"
+    },
+    "errors": {
+      "INVALID_VALUE": "Enter a nonnegative amount with up to 15 whole digits and 6 decimal places.",
+      "INVALID_HOURS": "Enter nonnegative hours with up to 2 decimal places.",
+      "DAILY_HOURS_EXCEEDED": "Normal plus overtime cannot exceed 24 hours per date.",
+      "NIGHT_HOURS_EXCEEDED": "Night hours cannot exceed normal plus overtime hours.",
+      "INVALID_DATE": "Enter a real date in the selected month.",
+      "MONTH_MISMATCH": "The date must belong to the selected month.",
+      "DUPLICATE_DATE": "Only one entry per date is allowed."
+    },
+    "intro": "Record daily hours, save monthly pay settings, and estimate your gross salary.",
+    "calendarScrollHint": "Swipe horizontally to see the full calendar, or use the date list."
+  }
 }

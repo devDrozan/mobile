@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   brand: { alignItems: 'center', gap: 24, maxWidth: 480, width: '100%' },
-  logo: { width: 128, height: 128, borderRadius: 28 },
+  logo: { width: 128, height: 128, borderRadius: 30 },
   // Native metrics and unrestricted scaling keep the name readable at large text sizes.
   name: { fontSize: 26, fontWeight: '600', textAlign: 'center', alignSelf: 'stretch' },
 });

@@ -18,7 +18,7 @@ function ResultAmount({ value, size = 34 }: { value: string; size?: number }) {
   const fontSize = width ? Math.min(size, Math.max(18, width / (value.length * .67))) : size;
   return <View onLayout={event => setWidth(event.nativeEvent.layout.width)} style={{ alignSelf: 'stretch', minWidth: 0 }}>
     <ScrollView horizontal style={{ flexGrow: 0 }}>
-      <Copy numberOfLines={1} style={{ fontFamily: 'NotoSansMyanmar_600SemiBold', fontSize, lineHeight: fontSize * 1.55, color: colors.resultText, flexShrink: 0 }}>{value}</Copy>
+      <Copy fixedMetrics numberOfLines={1} style={{ fontFamily: 'NotoSansMyanmar_600SemiBold', fontSize, lineHeight: fontSize * 1.55, color: colors.resultText, flexShrink: 0 }}>{value}</Copy>
     </ScrollView>
   </View>;
 }
@@ -30,7 +30,7 @@ export function Result({ value }: { value: Calculation }) {
   return <>
     <View accessibilityLiveRegion="polite" style={[styles.card, { backgroundColor: colors.resultBackground, borderColor: colors.resultBackground }]}>
       <Copy style={{ fontSize: 11, color: colors.resultMuted }}>{t(result?.kind === 'dc' ? 'contributionTitle' : 'estimateTitle')}</Copy>
-      {result ? <><ResultAmount value={`₩${money(result.kind === 'dc' ? result.requiredContributionKrw : result.amountKrw)}`} /><Copy style={{ fontSize: 12, color: colors.resultMuted }}>{t('beforeTax')}</Copy>{result.kind === 'severance' && result.provisional && <Copy style={{ fontSize: 12, color: colors.resultWarning }}>{t('provisional')}</Copy>}{result.kind === 'dc' && result.reportedBalance && <><Copy style={{ fontSize: 12, color: colors.resultMuted }}>{t('balance')}</Copy><ResultAmount value={`₩${inputMoney(result.reportedBalance.amount)}`} size={23} /><Copy style={{ color: colors.resultMuted, fontSize: 11 }}>{dateLabel(result.reportedBalance.asOf, i18n.language)}</Copy></>}</> : <><Copy style={[styles.heading, { color: colors.resultText }]}>{t(value.status === 'ineligible' ? 'ineligibleTitle' : 'reviewTitleResult')}</Copy><Copy style={{ color: colors.resultMuted, fontSize: 13 }}>{t(value.status === 'ineligible' ? 'ineligibleSub' : 'reviewResultSub')}</Copy>{value.context.eligibility.reasons.map(reason => <Copy key={reason} style={{ color: colors.resultText, fontSize: 12 }}>{t(`reasons.${reason}`)}</Copy>)}</>}
+      {result ? <><ResultAmount value={`₩${money(result.kind === 'dc' ? result.requiredContributionKrw : result.amountKrw)}`} /><Copy style={{ fontSize: 12, color: colors.resultMuted }}>{t('beforeTax')}</Copy>{result.kind === 'severance' && result.provisional && <Copy style={{ fontSize: 12, color: colors.resultWarning }}>{t('provisional')}</Copy>}{result.kind === 'dc' && result.reportedBalance && <><Copy style={{ fontSize: 12, color: colors.resultMuted }}>{t('balance')}</Copy><ResultAmount value={`₩${inputMoney(result.reportedBalance.amount)}`} size={23} /><Copy style={{ color: colors.resultMuted, fontSize: 11 }}>{dateLabel(result.reportedBalance.asOf, i18n.language)}</Copy></>}</> : <><Copy style={{ color: colors.resultMuted, fontSize: 13 }}>{t(value.status === 'ineligible' ? 'ineligibleSub' : 'reviewResultSub')}</Copy>{value.context.eligibility.reasons.map(reason => <Copy key={reason} style={{ color: colors.resultText, fontSize: 12 }}>{t(`reasons.${reason}`)}</Copy>)}</>}
     </View>
     <View style={styles.card}><Copy accessibilityRole="header" style={styles.heading}>{t('calculation')}</Copy>
       <SummaryRow label={t('serviceDays')} value={String(value.context.employmentDays)} />

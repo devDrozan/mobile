@@ -1,13 +1,15 @@
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Copy, useUi } from './ui';
+import { useRouteHeadingFocus } from './useRouteHeadingFocus';
 
 export function AboutContent() {
   const { t, i18n } = useTranslation();
   const { styles } = useUi();
   const isMyanmar = i18n.resolvedLanguage === 'my';
+  const heading = useRouteHeadingFocus();
   return <>
-    <View><Copy style={styles.eyebrow}>{t('appName')}</Copy><Copy accessibilityRole="header" style={styles.title}>{t('aboutTitle')}</Copy></View>
+    <View><Copy style={styles.eyebrow}>{t('appName')}</Copy><Copy ref={heading} accessible accessibilityRole="header" tabIndex={-1} style={isMyanmar ? styles.burmeseTitle : styles.title}>{t('aboutTitle')}</Copy></View>
     <View style={styles.card}>
       <Copy accessibilityRole="header" style={styles.heading}>{t('aboutCreator')}</Copy>
       <View style={styles.divider} />

@@ -10,10 +10,10 @@ import { Copy, Header } from '../src/components/ui';
 import AboutScreen from '../src/app/about';
 import { InfoContent } from '../src/components/InfoContent';
 import { CalculatorSessionProvider } from '../src/calculator-session';
-import CalculatorScreen from '../src/app/index';
+import CalculatorScreen from '../src/modules/severance/CalculatorScreen';
 import { getContext, type Context } from '../src/api/client';
 
-jest.mock('expo-router', () => ({ usePathname: jest.fn(() => '/'), router: { navigate: jest.fn() } }));
+jest.mock('expo-router', () => ({ usePathname: jest.fn(() => '/'), useFocusEffect: () => undefined, router: { navigate: jest.fn() } }));
 jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('../src/api/client', () => ({
@@ -77,74 +77,56 @@ it('ignores invalid saved values and still changes appearance when storage fails
   expect(screen.getByTestId('appearance')).toHaveTextContent('dark/dark');
 });
 
-it.each(['en', 'my'])('collapses icon-labelled preferences under the localized menu in %s', async language => {
+it.each(['en', 'my'])('offers direct theme, language and search actions in %s', async language => {
   await act(() => i18n.changeLanguage(language));
   await render(<AppThemeProvider><Header /></AppThemeProvider>);
-  const toggle = screen.getByRole('button', { name: i18n.t('menu') });
-  expect(toggle).not.toBeExpanded();
-  expect(screen.queryByRole('radio')).toBeNull();
-  expect(screen.queryByRole('button', { name: i18n.t('aboutUs') })).toBeNull();
-  await fireEvent.press(toggle);
-  expect(toggle).toBeExpanded();
-  expect(screen.getByRole('radio', { name: language === 'en' ? 'English' : 'မြန်မာ' })).toBeChecked();
-  expect(screen.getByRole('radio', { name: i18n.t('themeLight') })).toBeChecked();
-  expect(screen.getAllByRole('radio')).toHaveLength(4);
-  expect(screen.queryByRole('radio', { name: i18n.t('themeSystem') })).toBeNull();
-  await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeDark') }));
-  expect(screen.getByRole('radio', { name: i18n.t('themeDark') })).toBeChecked();
-  expect(toggle).toBeExpanded();
+  expect(screen.getByText('E9')).toBeOnTheScreen();
+  const theme = screen.getByRole('button', { name: i18n.t('hub.switchToDark') });
+  const languageButton = screen.getByRole('button', { name: i18n.t('language') });
+  const searchButton = screen.getByRole('button', { name: i18n.t('hub.search') });
+  await fireEvent.press(theme);
+  expect(screen.getByRole('button', { name: i18n.t('hub.switchToLight') })).toBeOnTheScreen();
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'dark');
-  await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeLight') }));
-  expect(screen.getByRole('radio', { name: i18n.t('themeLight') })).toBeChecked();
-  await fireEvent.press(toggle);
-  expect(toggle).not.toBeExpanded();
-  expect(screen.queryByRole('radio')).toBeNull();
-  expect(screen.queryByRole('button', { name: i18n.t('aboutUs') })).toBeNull();
+  await fireEvent.press(languageButton);
+  expect(languageButton).toBeExpanded();
+  expect(screen.getByRole('radio', { name: language === 'en' ? 'English' : 'မြန်မာ' })).toBeChecked();
+  await fireEvent.press(screen.getByRole('radio', { name: language === 'en' ? 'မြန်မာ' : 'English' }));
+  expect(screen.getByRole('button', { name: i18n.t('language') })).not.toBeExpanded();
+  await fireEvent.press(searchButton);
+  expect(router.navigate).toHaveBeenCalledWith('/search');
 });
 
-it('shows the resolved device theme until either theme option is explicitly selected', async () => {
+it('follows the device theme until the header theme icon is tapped', async () => {
   jest.mocked(AsyncStorage.getItem).mockResolvedValueOnce('system');
   jest.mocked(useColorScheme).mockReturnValue('dark');
   const tree = () => <AppThemeProvider><Header /></AppThemeProvider>;
   const view = await render(tree());
-  await fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
-  expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
+  expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeOnTheScreen();
   jest.mocked(useColorScheme).mockReturnValue('light');
   await view.rerender(tree());
-  expect(screen.getByRole('radio', { name: 'Light' })).toBeChecked();
-  await fireEvent.press(screen.getByRole('radio', { name: 'Light' }));
-  expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'light');
-  jest.mocked(useColorScheme).mockReturnValue('dark');
+  await fireEvent.press(screen.getByRole('button', { name: 'Switch to dark mode' }));
+  expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'dark');
+  jest.mocked(useColorScheme).mockReturnValue('light');
   await view.rerender(tree());
-  expect(screen.getByRole('radio', { name: 'Light' })).toBeChecked();
+  expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeOnTheScreen();
 });
 
-it('closes the menu when opening a primary tab or About us', async () => {
-  await render(<AppThemeProvider><Header /></AppThemeProvider>);
-  const toggle = screen.getByRole('button', { name: 'Menu' });
-  await fireEvent.press(toggle);
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('guide') }));
-  expect(router.navigate).toHaveBeenCalledWith('/guide');
-  expect(toggle).not.toBeExpanded();
-  await fireEvent.press(toggle);
-  await fireEvent.press(screen.getByRole('button', { name: 'About us' }));
-  expect(router.navigate).toHaveBeenCalledWith('/about');
-  expect(toggle).not.toBeExpanded();
-});
-
-it('closes the menu when navigation happens outside the header', async () => {
-  jest.mocked(usePathname).mockReturnValue('/about');
+it('keeps module navigation available and closes language choices on route changes', async () => {
+  jest.mocked(usePathname).mockReturnValue('/severance');
   const tree = () => <AppThemeProvider><Header /></AppThemeProvider>;
   const view = await render(tree());
-  await fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
-  expect(screen.getByRole('button', { name: 'Menu' })).toBeExpanded();
-  jest.mocked(usePathname).mockReturnValue('/');
+  await fireEvent.press(screen.getByRole('button', { name: 'Language' }));
+  expect(screen.getByRole('button', { name: 'Language' })).toBeExpanded();
+  await fireEvent.press(screen.getByRole('tab', { name: i18n.t('guide') }));
+  expect(router.navigate).toHaveBeenCalledWith('/severance/guide');
+  jest.mocked(usePathname).mockReturnValue('/severance/guide');
   await view.rerender(tree());
-  expect(screen.getByRole('button', { name: 'Menu' })).not.toBeExpanded();
-  expect(screen.queryByRole('radio')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Language' })).not.toBeExpanded();
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.backHome') }));
+  expect(router.navigate).toHaveBeenCalledWith('/');
 });
 
-it('retains the current wage draft and step through menu, language changes and About us navigation', async () => {
+it('retains the current wage draft and step through theme, language and About navigation', async () => {
   const context: Context = {
     method: 'normal', retirementDate: '2017-09-16', employmentDays: 1080, lookbackStart: '2017-06-16', lookbackDays: 92,
     eligibility: { status: 'eligible', reasons: [] },
@@ -154,23 +136,19 @@ it('retains the current wage draft and step through menu, language changes and A
   const route = (calculator: boolean) => <AppThemeProvider><CalculatorSessionProvider><Header />{calculator ? <CalculatorScreen /> : <AboutScreen />}</CalculatorSessionProvider></AppThemeProvider>;
   const view = await render(route(true));
   await enterWages();
-  await fireEvent.changeText(screen.getByLabelText('Base pay'), '123456.789012');
-  await fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
-  await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));
-  expect(screen.getByLabelText('Base pay')).toHaveDisplayValue('123456.789012');
+  await fireEvent.changeText(screen.getByLabelText('Base pay', { exact: false }), '123456.789012');
+  await fireEvent.press(screen.getByRole('button', { name: 'Switch to dark mode' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Language' }));
   await fireEvent.press(screen.getByRole('radio', { name: 'မြန်မာ' }));
-  expect(screen.getByRole('button', { name: i18n.t('menu') })).toBeExpanded();
-  expect(screen.getByLabelText(i18n.t('basePay'))).toHaveDisplayValue('123456.789012');
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('aboutUs') }));
-  expect(router.navigate).toHaveBeenCalledWith('/about');
+  expect(screen.getByLabelText(i18n.t('basePay'), { exact: false })).toHaveDisplayValue('123456.789012');
   await view.rerender(route(false));
   expect(screen.getByText(i18n.t('aboutCreator'))).toBeOnTheScreen();
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('menu') }));
-  await fireEvent.press(screen.getByRole('radio', { name: i18n.t('themeLight') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.switchToLight') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('language') }));
   await fireEvent.press(screen.getByRole('radio', { name: 'English' }));
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('returnCalculator') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.backHome') }));
   await view.rerender(route(true));
-  expect(screen.getByLabelText('Base pay')).toHaveDisplayValue('123456.789012');
+  expect(screen.getByLabelText('Base pay', { exact: false })).toHaveDisplayValue('123456.789012');
   expect(getContext).toHaveBeenCalledTimes(1);
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'dark');
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'light');
@@ -186,7 +164,7 @@ it.each(['en', 'my'])('shows the approved About content, copyright and return ac
   expect(screen.getByText(i18n.t('aboutScopeDetails'))).toBeOnTheScreen();
   expect(screen.getByText(i18n.t('aboutScopeEstimate'))).toBeOnTheScreen();
   expect(screen.getByText(i18n.t('copyright', { year: new Date().getFullYear() }))).toBeOnTheScreen();
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('returnCalculator') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.backHome') }));
   expect(router.navigate).toHaveBeenCalledWith('/');
 });
 
@@ -272,10 +250,24 @@ function luminance(hex: string) {
   return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
 }
 
+it.each([['light', lightColors], ['dark', darkColors]] as const)('keeps non-text state indicators visible in the %s palette', (_name, colors) => {
+  // 1.4.11 asks for 3:1 against the adjacent colour for borders, switches and
+  // carousel dots that carry meaning rather than decoration.
+  const pairs = [
+    [colors.selectedBorder, colors.selected], [colors.selectedBorder, colors.surface],
+    [colors.switchOn, colors.surfaceSubtle], [colors.switchOff, colors.surfaceSubtle],
+    [colors.muted, colors.background],
+  ];
+  for (const [foreground, background] of pairs) {
+    const a = luminance(foreground), b = luminance(background);
+    expect((Math.max(a, b) + .05) / (Math.min(a, b) + .05)).toBeGreaterThanOrEqual(3);
+  }
+});
+
 it.each([['light', lightColors], ['dark', darkColors]] as const)('keeps essential text readable in the %s palette', (_name, colors) => {
   const pairs = [
     [colors.text, colors.surface], [colors.muted, colors.surface], [colors.muted, colors.surfaceSubtle],
-    [colors.link, colors.surface], [colors.placeholder, colors.surface], [colors.onPrimary, colors.primary], [colors.error, colors.errorBackground],
+    [colors.link, colors.surface], [colors.placeholder, colors.surface], [colors.onPrimary, colors.primary], [colors.onAccent, colors.accent], [colors.error, colors.errorBackground],
     [colors.resultText, colors.resultBackground], [colors.resultMuted, colors.resultBackground], [colors.resultWarning, colors.resultBackground],
   ];
   for (const [foreground, background] of pairs) {

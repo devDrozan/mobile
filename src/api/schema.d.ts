@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/salary-estimates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["estimateSalary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -348,6 +364,85 @@ export interface operations {
                                 asOf: string;
                             } | null;
                         };
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    estimateSalary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    month: string;
+                    settings: {
+                        basicSalary: string;
+                        normalRate: string;
+                        overtimeRate: string;
+                        saturdayRate: string;
+                        sundayRate: string;
+                        nightRate: string;
+                    };
+                    entries: {
+                        date: string;
+                        normalHours: string;
+                        overtimeHours: string;
+                        nightHours: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        month: string;
+                        /** @enum {string} */
+                        currency: "KRW";
+                        formulaVersion: string;
+                        rounding: string;
+                        assumptions: string[];
+                        hours: {
+                            normal: string;
+                            weekdayOvertime: string;
+                            saturday: string;
+                            sunday: string;
+                            night: string;
+                        };
+                        components: {
+                            base: string;
+                            weekdayOvertime: string;
+                            saturday: string;
+                            sunday: string;
+                            night: string;
+                        };
+                        rawAmountKrw: string;
+                        amountKrw: string;
                     };
                 };
             };
