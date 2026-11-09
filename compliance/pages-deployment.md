@@ -1,11 +1,23 @@
 # GitHub Pages deployment — privacy policy site
 
-Target URL after deployment: **https://devdrozan.github.io/mobile/**
+Target URL: **https://devdrozan.github.io/mobile/** — **live since 9 November 2026**.
 
-Source: `devDrozan/mobile`, branch `main`, folder `/docs`.
+Source: `devDrozan/mobile`, branch `main`, folder `/docs`, published by commit `8f36bc8`.
 
-**Nothing here has been executed yet.** Publishing is gated on owner approval of the
-policy text (see `README.md`) and on the P0 items in `outstanding-issues.md`.
+## Deployment record
+
+| Check | Result |
+| --- | --- |
+| GitHub Pages build | `built`, no error |
+| `GET https://devdrozan.github.io/mobile/` | `200`, `content-type: text/html; charset=utf-8` |
+| `GET …/styles.css` | `200`, `content-type: text/css` |
+| `GET http://devdrozan.github.io/mobile/` | `301` to HTTPS |
+| HSTS header | `strict-transport-security: max-age=31556952` |
+| HTTPS enforcement | `https_enforced: true` |
+| Served HTML vs committed file | identical SHA-256 |
+
+Remaining: add the URL to Play Console and AdMob (section 4). The steps below are kept as
+the reproducible procedure for a rebuild or a future move.
 
 ## 0. Before you start
 
