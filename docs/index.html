@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — E9 Mate Myanmar</title>
+<meta name="description" content="Privacy Policy for the E9 Mate Myanmar Android app (com.e9mate.myanmar): what stays on your device, what is sent to the calculation API, and how Google AdMob advertising works.">
+<meta name="theme-color" content="#123c35" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101a16" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://devdrozan.github.io/mobile/">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the policy</a>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <p class="brand"><span class="brand-mark" aria-hidden="true">E9</span> Mate Myanmar</p>
+    <h1>Privacy Policy</h1>
+    <p class="lede">How the E9 Mate Myanmar Android app handles your information.</p>
+    <dl class="facts">
+      <div><dt>Effective date</dt><dd><time datetime="2026-11-09">9 November 2026</time></dd></div>
+      <div><dt>App</dt><dd>E9 Mate Myanmar</dd></div>
+      <div><dt>Package</dt><dd><code>com.e9mate.myanmar</code></dd></div>
+      <div><dt>Platform</dt><dd>Android</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+
+  <section class="summary" aria-labelledby="summary-title">
+    <h2 id="summary-title">In short</h2>
+    <ul class="summary-list">
+      <li><strong>No account.</strong> There is no sign-in, no cloud history, and no user profile.</li>
+      <li><strong>Your records stay on your phone.</strong> Salary work records, pay settings, and expense entries are saved in the app's private storage on your device. Expense entries are never sent anywhere.</li>
+      <li><strong>Calculations are sent to our API only when you ask for one.</strong> Only the values needed for that calculation are transmitted, over HTTPS, to a stateless API that does not keep them.</li>
+      <li><strong>The app shows Google AdMob advertising.</strong> Google's advertising SDK receives device and advertising identifiers, your IP address, and ad-interaction data. The app currently requests non-personalized ads only.</li>
+      <li><strong>No analytics, crash reporting, location, contacts, camera, or microphone access.</strong></li>
+    </ul>
+  </section>
+
+  <nav class="toc" aria-labelledby="toc-title">
+    <h2 id="toc-title">Contents</h2>
+    <ol>
+      <li><a href="#who">Who we are</a></li>
+      <li><a href="#scope">Scope of this policy</a></li>
+      <li><a href="#device">Information stored only on your device</a></li>
+      <li><a href="#api">Information sent to our calculation API</a></li>
+      <li><a href="#ads">Advertising and Google AdMob</a></li>
+      <li><a href="#not-collected">Information we do not collect</a></li>
+      <li><a href="#use">How and why we use information</a></li>
+      <li><a href="#sharing">Sharing and third parties</a></li>
+      <li><a href="#retention">Retention and deletion</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#transfers">International transfers</a></li>
+      <li><a href="#children">Children</a></li>
+      <li><a href="#rights">Your rights and choices</a></li>
+      <li><a href="#links">External links</a></li>
+      <li><a href="#changes">Changes to this policy</a></li>
+      <li><a href="#website">About this website</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <section id="who">
+    <h2>1. Who we are</h2>
+    <p>E9 Mate Myanmar is an independent mobile app for Myanmar workers in South Korea. It is developed and published by an individual developer ("we", "us"). We are the data controller for the information described in this policy.</p>
+    <p>Contact: <a href="mailto:rozannainghangu@gmail.com">rozannainghangu@gmail.com</a></p>
+  </section>
+
+  <section id="scope">
+    <h2>2. Scope of this policy</h2>
+    <p>This policy applies to the Android app <strong>E9 Mate Myanmar</strong>, package name <code>com.e9mate.myanmar</code>, and to the calculation service the app uses. It does not apply to other apps, websites, or services that we do not operate, including the websites of government agencies and financial institutions that the app links to.</p>
+    <p>The app includes four tools: a severance pay calculator, salary estimation from recorded work time, an expense tracker, and E-9 worker information utilities. A KRW/MMK currency reference-rate preview is also included. It shows a published reference rate when the rate service is available, and it is covered by this policy.</p>
+  </section>
+
+  <section id="device">
+    <h2>3. Information stored only on your device</h2>
+    <p>The following information is written to the app's private storage on your phone. It is not uploaded to us, not synchronized to a cloud account, and not visible to other apps under normal Android app sandboxing. It remains on your device until you delete it or remove the app.</p>
+
+    <div class="table-scroll">
+      <table>
+        <caption>Local data and why it is stored</caption>
+        <thead>
+          <tr><th scope="col">Data</th><th scope="col">Where</th><th scope="col">Why</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Language choice (English or Burmese)</td>
+            <td>App preferences (<code>e9-language</code>)</td>
+            <td>To show the app in the language you selected.</td>
+          </tr>
+          <tr>
+            <td>Appearance choice (light, dark, or follow system)</td>
+            <td>App preferences (<code>e9-theme</code>)</td>
+            <td>To keep the appearance you selected.</td>
+          </tr>
+          <tr>
+            <td>Salary work records and pay settings: the selected month, dated normal / overtime / night hours, basic monthly salary, and up to five hourly rates</td>
+            <td>Local SQLite database <code>e9-work-time.db</code></td>
+            <td>To let you record work time offline and recalculate later without re-entering it.</td>
+          </tr>
+          <tr>
+            <td>Expense records: date, description (up to 120 characters), category, and amount</td>
+            <td>Local SQLite database <code>e9-expenses.db</code></td>
+            <td>To show your private monthly expense calendar and daily totals.</td>
+          </tr>
+          <tr>
+            <td>Acknowledgement that you accepted the local-storage disclosure in each module</td>
+            <td>Local SQLite databases</td>
+            <td>To avoid showing the same notice again.</td>
+          </tr>
+          <tr>
+            <td>Calculator drafts and results you have not saved</td>
+            <td>App memory only</td>
+            <td>To keep your work while you use the screen. This is cleared when you leave the screen or close the app.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Android backup for this app is disabled, so these local records are not copied into Android cloud backup. Removing the app or clearing its storage in Android Settings deletes them permanently. The app cannot recover them for you because we never receive them.</p>
+  </section>
+
+  <section id="api">
+    <h2>4. Information sent to our calculation API</h2>
+    <p>Severance, salary, and currency calculations are performed by a service we operate, so that the app does not contain financial formulas. Data is transmitted only after you tap a button that requests a calculation. Each request is processed in memory to produce the response; we do not store the request or the result, and we do not keep calculation history.</p>
+
+    <div class="table-scroll">
+      <table>
+        <caption>What is transmitted, and when</caption>
+        <thead>
+          <tr><th scope="col">Feature</th><th scope="col">Sent when you tap</th><th scope="col">What is sent</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Severance pay calculator</td>
+            <td>"Calculate"</td>
+            <td>Employment start and last-working dates, weekly hours, answers to the special-case questions, and the wage amounts you enter for each period. No name or ID number is requested or sent.</td>
+          </tr>
+          <tr>
+            <td>Salary estimate from work time</td>
+            <td>"Calculate / Retry estimate"</td>
+            <td>The selected month, your monthly pay settings and hourly rates, and the dated hours recorded for that month. Expense entries, descriptions, and other saved months are not included.</td>
+          </tr>
+          <tr>
+            <td>Currency conversion preview</td>
+            <td>"Convert"</td>
+            <td>The amount and the currency pair (KRW or MMK). The amount is not sent to the bank or rate institution; the rate is retrieved by our server.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Not sent to our API:</strong> expense entries or descriptions, saved salary months you did not select, your language or appearance preference, your name, email address, phone number, advertising identifier, contacts, or location.</p>
+    <p>Requests are sent over HTTPS. In release builds the app refuses to send calculation data to an address that is not HTTPS. Our API does not log request bodies or results, applies rate limiting, and marks responses as non-cacheable.</p>
+  </section>
+
+  <section id="ads">
+    <h2>5. Advertising and Google AdMob</h2>
+    <p>The Home screen displays a banner ad supplied by <strong>Google AdMob</strong> through the Google Mobile Ads SDK. The Home screen also shows an E9 Mate promotional carousel built from our own content and labelled as a sample promotion rather than a paid ad. That carousel is ordinary app content and collects no information.</p>
+
+    <p>To serve and measure ads, Google's SDK may collect and send the following to Google:</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Advertising data handled by Google</caption>
+        <thead>
+          <tr><th scope="col">Data</th><th scope="col">Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Advertising identifier (Android Advertising ID) and app set ID</td><td>Ad delivery and frequency capping, measurement, fraud and abuse prevention.</td></tr>
+          <tr><td>IP address</td><td>Delivering the ad, estimating general (city-level) location, measurement, and fraud prevention.</td></tr>
+          <tr><td>Device and app information, such as device model, operating-system version, app name and version, and language</td><td>Ad delivery, compatibility, diagnostics, and aggregate reporting.</td></tr>
+          <tr><td>Ad interactions, such as impressions and clicks</td><td>Measurement, billing, and invalid-traffic prevention.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>This data is collected by Google, not by us. We do not receive your advertising identifier in the app, and we do not use it to identify you.</p>
+
+    <p><strong>Current configuration.</strong> The app currently requests only <strong>non-personalized ads</strong>. Non-personalized ads are selected from contextual information rather than a profile of your past behaviour, but Google may still use the data above for frequency capping, aggregate reporting, and fraud prevention. If we later enable personalized advertising, we will present a consent choice where the law requires one (for example in the European Economic Area, the United Kingdom, and Switzerland) and update this policy and our Google Play Data safety disclosure before doing so.</p>
+
+    <p>Google's own policies govern its handling of this data:</p>
+    <ul class="links">
+      <li><a href="https://policies.google.com/privacy" rel="noopener noreferrer">Google Privacy Policy</a></li>
+      <li><a href="https://policies.google.com/technologies/partner-sites" rel="noopener noreferrer">How Google uses information from sites or apps that use our services</a></li>
+      <li><a href="https://policies.google.com/technologies/ads" rel="noopener noreferrer">How Google uses advertising data</a></li>
+      <li><a href="https://support.google.com/admob/answer/6128543" rel="noopener noreferrer">AdMob policies and restrictions</a></li>
+    </ul>
+
+    <p>You can control ad personalization and reset or delete your advertising ID in Android: <strong>Settings → Google → Ads</strong>. You can also review ad settings at <a href="https://adssettings.google.com" rel="noopener noreferrer">adssettings.google.com</a>. Deleting the advertising ID does not remove ads; it means ads can no longer be based on that identifier.</p>
+  </section>
+
+  <section id="not-collected">
+    <h2>6. Information we do not collect</h2>
+    <p>We do not ask for and do not intentionally collect:</p>
+    <ul>
+      <li>your name, email address, phone number, or postal address;</li>
+      <li>passport numbers, alien registration numbers, visa document numbers, or bank account details;</li>
+      <li>precise or GPS location, contacts, calendar, photos, files, microphone, or camera content;</li>
+      <li>health, biometric, or biometric-derived data;</li>
+      <li>app usage analytics, crash reports, or advertising attribution beyond what Google's advertising SDK collects as described above.</li>
+    </ul>
+  </section>
+
+  <section id="use">
+    <h2>7. How and why we use information</h2>
+    <ul>
+      <li><strong>To provide the calculation you request.</strong> The values you submit are used only to compute and return that result.</li>
+      <li><strong>To keep your records available offline.</strong> Salary and expense records are read from and written to your device's storage.</li>
+      <li><strong>To remember your preferences.</strong> Language and appearance are stored locally.</li>
+      <li><strong>To show advertising.</strong> The AdMob banner keeps the app free; Google uses the advertising data described above for delivery, measurement, and fraud prevention.</li>
+      <li><strong>To keep the service available and secure.</strong> Our API applies rate limiting and rejects invalid requests. We do not build usage profiles.</li>
+    </ul>
+
+    <p>If you are in the European Economic Area or the United Kingdom, we rely on these legal bases: performance of the service you requested when you submit a calculation; our legitimate interests in operating a secure, abuse-resistant calculation service; and consent where the law requires it for advertising. You may withdraw consent at any time through the advertising controls described above.</p>
+  </section>
+
+  <section id="sharing">
+    <h2>8. Sharing and third parties</h2>
+    <p>We do not sell your personal information, and we do not share it with data brokers.</p>
+    <ul>
+      <li><strong>Google (AdMob / Google Mobile Ads SDK):</strong> receives the advertising data described in section 5 for ad delivery, measurement, and fraud prevention. Google may share it with its advertising partners under its own policies.</li>
+      <li><strong>Our API hosting:</strong> the service that performs calculations processes your request in memory on our behalf. It retains no request data after the response is returned.</li>
+      <li><strong>Legal requirements:</strong> we may disclose information if we are legally required to do so. Because we do not store calculation data, there is normally nothing for us to disclose.</li>
+    </ul>
+    <p>Your expense records and saved salary records are never shared, because they never leave your device.</p>
+  </section>
+
+  <section id="retention">
+    <h2>9. Retention and deletion</h2>
+    <ul>
+      <li><strong>On your device:</strong> salary records and expense records remain until you delete them in the app, or until you clear the app's storage or uninstall it. The salary module can delete a day from the current draft, a whole month, or all records; the expense module can delete a single entry, a month, or everything.</li>
+      <li><strong>On our API:</strong> nothing is retained. Requests and results exist in memory only for the time needed to answer them and are not written to logs or a database.</li>
+      <li><strong>Advertising data:</strong> retained by Google according to Google's Privacy Policy and ad settings.</li>
+    </ul>
+    <p><strong>How to delete local data:</strong> use the delete actions inside each module, or go to <strong>Android Settings → Apps → E9 Mate Myanmar → Storage → Clear data</strong>, or uninstall the app. Deleting the app does not affect data held by Google; use the advertising controls in section 5 for that.</p>
+    <p>Because there are no accounts and no server-side records, there is no server account to delete. If you believe we hold information about you, contact us at <a href="mailto:rozannainghangu@gmail.com">rozannainghangu@gmail.com</a> and we will investigate.</p>
+  </section>
+
+  <section id="security">
+    <h2>10. Security</h2>
+    <ul>
+      <li>Calculation data is transmitted over HTTPS, and release builds reject a non-HTTPS API address.</li>
+      <li>Our API does not log request bodies or results, limits request size, and applies rate limiting.</li>
+      <li>Local records are stored in the app's private storage, which other apps cannot read under normal Android app sandboxing. Android backup for this app is disabled.</li>
+      <li>The app has no accounts, passwords, or payment credentials to protect.</li>
+      <li>We keep only the data needed for each feature and do not build advertising or usage profiles ourselves.</li>
+    </ul>
+    <p>We do not claim that local files are encrypted at rest beyond the protection Android provides for app-private storage. Anyone with access to an unlocked device or to a rooted device may be able to read app data, so keep your device locked and up to date. No method of transmission or storage is completely secure, and we cannot guarantee absolute security.</p>
+  </section>
+
+  <section id="transfers">
+    <h2>11. International transfers</h2>
+    <p>Our calculation API processes requests on servers we operate. Google processes advertising data on its global infrastructure, which may include countries other than the one you live in, under the safeguards described in Google's Privacy Policy. We do not transfer your data to any other country or organization.</p>
+  </section>
+
+  <section id="children">
+    <h2>12. Children</h2>
+    <p>The app is intended for adults working in South Korea under the E-9 employment permit system. It is not directed to children, and we do not knowingly collect information from children. If you believe a child has used the app and provided information, contact us and we will help you remove it; because we hold no server records, deletion is normally completed on the device as described in section 9.</p>
+  </section>
+
+  <section id="rights">
+    <h2>13. Your rights and choices</h2>
+    <p>Depending on where you live, you may have the right to access, correct, delete, restrict, or object to the processing of your personal information, to data portability, and to withdraw consent. Because the app has no account and our API keeps no records, most of these rights are exercised directly on your device:</p>
+    <ul>
+      <li>view and edit all saved records inside the app;</li>
+      <li>delete individual records, whole months, or everything, in the salary and expense modules;</li>
+      <li>clear all local data through Android Settings or by uninstalling the app;</li>
+      <li>control advertising personalization and reset or delete the advertising ID in Android settings.</li>
+    </ul>
+    <p>You may also contact us at <a href="mailto:rozannainghangu@gmail.com">rozannainghangu@gmail.com</a>. If you are in the EEA or the UK, you have the right to complain to your local data protection authority.</p>
+  </section>
+
+  <section id="links">
+    <h2>14. External links</h2>
+    <p>The app and this page link to websites we do not control, including the Korean Ministry of Employment and Labour, the EPS portal, KB Kookmin Bank, Korea Money Brokerage Corp., and Google. When you open one of those links, that site's own privacy policy applies. We are not responsible for their content or practices.</p>
+  </section>
+
+  <section id="changes">
+    <h2>15. Changes to this policy</h2>
+    <p>We may update this policy when the app's features or legal requirements change, for example if personalized advertising is enabled or a new module starts sending data. The effective date at the top of this page will change, and material changes will be reflected in the app's Google Play listing. Continuing to use the app after an update means you accept the revised policy.</p>
+  </section>
+
+  <section id="website">
+    <h2>16. About this website</h2>
+    <p>This page is a static document. It sets no cookies, runs no scripts, uses no analytics or tracking pixels, loads no third-party fonts or resources, and has no forms. The only visitor interaction possible is sending us an email through your own mail app.</p>
+    <p>This page is hosted on GitHub Pages. GitHub may process standard technical information, such as IP addresses, in server logs as described in <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener noreferrer">GitHub's privacy statement</a>. We do not receive or use those logs.</p>
+  </section>
+
+  <section id="contact" class="contact">
+    <h2>17. Contact</h2>
+    <p>Questions about this policy, the app's data practices, or a deletion request:</p>
+    <p class="contact-email"><a href="mailto:rozannainghangu@gmail.com">rozannainghangu@gmail.com</a></p>
+    <p class="muted">E9 Mate Myanmar · <code>com.e9mate.myanmar</code> · Android</p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>E9 Mate Myanmar</strong> — Privacy Policy</p>
+    <p>Effective <time datetime="2026-11-09">9 November 2026</time> · <a href="mailto:rozannainghangu@gmail.com">rozannainghangu@gmail.com</a></p>
+  </div>
+</footer>
+</body>
+</html>
