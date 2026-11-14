@@ -1,4 +1,4 @@
-import { blankEntry, blankSettings, emptyMonth, koreaMonth, monthDates, moveMonth, validateMonth } from '../src/modules/work/model';
+import { blankEntry, blankSettings, emptyMonth, koreaMonth, monthDates, moveMonth, normalizeHours, normalizeSalaryInput, validateMonth } from '../src/modules/work/model';
 it('uses Korean month and timezone-independent month boundaries', () => {
   expect(koreaMonth(new Date('2026-10-31T16:00:00Z'))).toBe('2026-11');
   expect(moveMonth('2026-01', -1)).toBe('2025-12');
@@ -14,8 +14,29 @@ it('validates fractional hours without binary boundary errors and night overlap'
   expect(validateMonth(draft)['entries.0.overtimeHours']).toBe('DAILY_HOURS_EXCEEDED');
   draft.entries[0] = { ...blankEntry('2026-11-02'), nightHours: '0.01' };
   expect(validateMonth(draft)['entries.0.nightHours']).toBe('NIGHT_HOURS_EXCEEDED');
-  draft.entries[0].normalHours = '1.001';
+  draft.entries[0].normalHours = 'abc';
   expect(validateMonth(draft)['entries.0.normalHours']).toBe('INVALID_HOURS');
+});
+it('parses clock time, decimal hours, and minute-only input into decimal hours', () => {
+  expect(normalizeHours('1:30')).toBe('1.5');
+  expect(normalizeHours('1.5')).toBe('1.5');
+  expect(normalizeHours('30')).toBe('0.5');
+  expect(normalizeHours('8')).toBe('8');
+  expect(normalizeHours('24')).toBe('24');
+  expect(normalizeHours('25')).toBe('0.42');
+  expect(normalizeHours('1:20')).toBe('1.33');
+  expect(normalizeHours('1.005')).toBe('1.01');
+  expect(normalizeHours('1.001')).toBe('1');
+  expect(normalizeHours('24:00')).toBe('24');
+  expect(normalizeHours('1:90')).toBeNull();
+  expect(normalizeHours('abc')).toBeNull();
+  expect(normalizeHours('')).toBeNull();
+});
+it('accepts flexible entry formats for validation but normalizes stored and submitted hours', () => {
+  const draft = emptyMonth('2026-11');
+  draft.entries = [{ date: '2026-11-02', normalHours: '1:30', overtimeHours: '30', nightHours: '1.5' }];
+  expect(validateMonth(draft)).toEqual({});
+  expect(normalizeSalaryInput(draft).entries[0]).toEqual({ date: '2026-11-02', normalHours: '1.5', overtimeHours: '0.5', nightHours: '1.5' });
 });
 it('rejects out-of-month/duplicate dates and isolates copied pay settings', () => {
   const settings = blankSettings(); settings.basicSalary = '2000000.50';

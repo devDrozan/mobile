@@ -1,3 +1,4 @@
+jest.mock('../src/components/FeatureBannerAd', () => ({ FeatureBannerAd: () => null }));
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useFonts } from '@expo-google-fonts/noto-sans-myanmar';
 import AsyncStorage from '@react-native-async-storage/async-storage';

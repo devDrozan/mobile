@@ -13,6 +13,7 @@ export default function ComingSoonScreen() {
   const styles = createStyles(colors);
   const heading = useRouteHeadingFocus();
   if (id === 'salary' || id === 'work') return <Redirect href="/work" />;
+  if (id === 'exchange') return <Redirect href="/exchange" />;
   const module = modules.find(item => item.id === id && item.status === 'planned');
   return <Screen>
     <View style={styles.card}>

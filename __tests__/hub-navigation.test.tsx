@@ -12,6 +12,7 @@ import { HubFooter } from '../src/modules/hub/HubFooter';
 
 jest.mock('expo-router', () => ({ Redirect: jest.fn(() => null), useFocusEffect: () => undefined, useLocalSearchParams: jest.fn(() => ({ id: 'work' })), usePathname: jest.fn(() => '/'), router: { navigate: jest.fn() } }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+jest.mock('react-native-google-mobile-ads', () => ({ BannerAd: () => null, BannerAdSize: { ANCHORED_ADAPTIVE_BANNER: 'anchored' }, TestIds: { ADAPTIVE_BANNER: 'test-banner' } }));
 
 beforeEach(async () => {
   jest.clearAllMocks();
@@ -34,23 +35,23 @@ it.each(['en', 'my'])('shows tappable services with honest availability in %s', 
   expect(router.navigate).toHaveBeenNthCalledWith(2, '/insurance');
   expect(router.navigate).toHaveBeenNthCalledWith(3, '/work');
   const exchange = i18n.t('hub.modules.exchange.title');
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.comingSoonNamed', { name: exchange }) + '. ' + i18n.t('hub.comingSoon') }));
-  expect(router.navigate).toHaveBeenNthCalledWith(4, { pathname: '/coming-soon', params: { id: 'exchange' } });
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.openNamed', { name: exchange }) + '. ' + i18n.t('hub.available') }));
+  expect(router.navigate).toHaveBeenNthCalledWith(4, '/exchange');
 });
 
 it('provides manual carousel controls and labels sample ads honestly', async () => {
   await render(<AppThemeProvider><HomeScreen /></AppThemeProvider>);
   const previous = screen.getByRole('button', { name: i18n.t('hub.previousSlide') });
   const next = screen.getByRole('button', { name: i18n.t('hub.nextSlide') });
-  expect(previous).toBeDisabled();
+  expect(previous).not.toBeDisabled();
   expect(screen.getAllByText(i18n.t('hub.sampleAd'))).toHaveLength(2);
   await fireEvent.press(next);
   expect(previous).not.toBeDisabled();
   await fireEvent.press(next);
   await fireEvent.press(next);
-  expect(next).toBeDisabled();
-  await fireEvent.press(screen.getByRole('button', { name: i18n.t('aboutUs') }));
-  expect(router.navigate).toHaveBeenCalledWith('/about');
+  expect(next).not.toBeDisabled();
+  await fireEvent.press(next);
+  expect(screen.getByLabelText(i18n.t('hub.position', { current: 1, total: 4 }))).toBeOnTheScreen();
 });
 
 it('searches local service names and handles an empty result', async () => {
@@ -67,7 +68,7 @@ it('searches local service names and handles an empty result', async () => {
   expect(screen.getByText(i18n.t('hub.noResults'))).toBeOnTheScreen();
 });
 
-it.each(['exchange', 'finance', 'information'])('keeps %s on its specific Coming soon destination', async id => {
+it.each(['finance', 'information'])('keeps %s on its specific Coming soon destination', async id => {
   jest.mocked(useLocalSearchParams).mockReturnValue({ id });
   await render(<AppThemeProvider><ComingSoonScreen /></AppThemeProvider>);
   expect(screen.getByRole('header', { name: i18n.t(`hub.modules.${id}.title`) })).toBeOnTheScreen();
@@ -109,4 +110,35 @@ it.each(['salary', 'work'])('redirects the historical planned %s link into the w
 it('keeps the salary route alias pointed at the work module', async () => {
   await render(<SalaryAlias />);
   expect(jest.mocked(Redirect).mock.calls.at(-1)?.[0]).toEqual({ href: '/work' });
+});
+
+it.each(['en', 'my'])('puts salary first and Expenses second with working local destinations in %s', async language => {
+  await act(() => i18n.changeLanguage(language));
+  const { modules } = require('../src/modules/catalog') as typeof import('../src/modules/catalog');
+  expect(modules.slice(0, 2).map(module => module.id)).toEqual(['work', 'expenses']);
+  await render(<AppThemeProvider><ServicesScreen /></AppThemeProvider>);
+  const name = i18n.t('hub.modules.expenses.title');
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.openNamed', { name }) + '. ' + i18n.t('hub.available') }));
+  expect(router.navigate).toHaveBeenCalledWith('/expenses');
+});
+
+it('redirects the old currency Coming soon link to the available converter', async () => {
+  jest.mocked(useLocalSearchParams).mockReturnValue({ id: 'exchange' });
+  await render(<AppThemeProvider><ComingSoonScreen /></AppThemeProvider>);
+  expect(jest.mocked(Redirect).mock.calls.at(-1)?.[0]).toEqual({ href: '/exchange' });
+  const { modules } = require('../src/modules/catalog') as typeof import('../src/modules/catalog');
+  expect(modules.find(module => module.id === 'exchange')).toMatchObject({status:'available',route:'/exchange'});
+  expect(screen.queryByText(i18n.t('hub.plannedNotice'))).toBeNull();
+});
+it.each(['en','my'])('opens the available converter from Services and search in %s',async language=>{
+  await act(()=>i18n.changeLanguage(language));
+  const label=i18n.t('hub.openNamed',{name:i18n.t('hub.modules.exchange.title')})+'. '+i18n.t('hub.available');
+  const services=await render(<AppThemeProvider><ServicesScreen /></AppThemeProvider>);
+  await fireEvent.press(screen.getByRole('button',{name:label}));
+  expect(router.navigate).toHaveBeenLastCalledWith('/exchange');
+  await services.unmount();
+  await render(<AppThemeProvider><SearchScreen /></AppThemeProvider>);
+  await fireEvent.changeText(screen.getByLabelText(i18n.t('hub.searchPlaceholder')),i18n.t('hub.modules.exchange.title'));
+  await fireEvent.press(screen.getByRole('button',{name:label}));
+  expect(router.navigate).toHaveBeenLastCalledWith('/exchange');
 });

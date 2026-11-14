@@ -1,5 +1,5 @@
-import { useMemo, useState, type ComponentRef, type PropsWithChildren, type Ref } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextProps, type TextStyle, type TextInputProps } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ComponentRef, type PropsWithChildren, type Ref } from 'react';
+import { AccessibilityInfo, ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextProps, type TextStyle, type TextInputProps } from 'react-native';
 import { usePathname, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../i18n';
@@ -80,35 +80,60 @@ function HeaderContent({ path }: { path: string }) {
   const { t, i18n } = useTranslation();
   const { colors, styles } = useUi();
   const { resolvedTheme, setMode } = useAppTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
-  return <View style={styles.header}>
-    <View style={styles.headerInner}>
-      <View style={styles.brandRow}>
-        <Copy fixedMetrics style={styles.brand}><Copy fixedMetrics style={styles.brandAccent}>E9</Copy> Mate</Copy>
-        <View style={styles.headerActions}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t(resolvedTheme === 'dark' ? 'hub.switchToLight' : 'hub.switchToDark')} onPress={() => setMode(resolvedTheme === 'dark' ? 'light' : 'dark')} style={({ pressed }) => [styles.headerAction, pressed && { opacity: .65 }]}><MenuIcon name="appearance" theme={resolvedTheme} background={colors.surface} color={colors.primary} /></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('language')} accessibilityState={{ expanded: languageOpen }} aria-expanded={languageOpen} onPress={() => setLanguageOpen(value => !value)} style={({ pressed }) => [styles.headerAction, languageOpen && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><MenuIcon name="language" color={colors.primary} /></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('hub.search')} onPress={() => { setLanguageOpen(false); router.navigate('/search'); }} style={({ pressed }) => [styles.headerActionAccent, pressed && { opacity: .8 }]}><MenuIcon name="search" color={colors.onAccent} /></Pressable>
+  const menuTrigger = useRef<ComponentRef<typeof View>>(null);
+  const menuHeading = useRef<ComponentRef<typeof Text>>(null);
+  const restoreFocus = useRef(false);
+  useEffect(() => {
+    if (menuOpen || !restoreFocus.current) return;
+    const frame = requestAnimationFrame(() => { restoreFocus.current = false; if (menuTrigger.current) AccessibilityInfo.sendAccessibilityEvent(menuTrigger.current, 'focus'); });
+    return () => cancelAnimationFrame(frame);
+  }, [menuOpen]);
+  const closeMenu = () => { setMenuOpen(false); setLanguageOpen(false); };
+  return <>
+    <View style={styles.header} accessibilityElementsHidden={menuOpen} importantForAccessibility={menuOpen ? 'no-hide-descendants' : 'auto'}>
+      <View style={styles.headerInner}>
+        <View style={styles.brandRow}>
+          <Copy fixedMetrics style={styles.brand}><Copy fixedMetrics style={styles.brandAccent}>E9</Copy> Mate</Copy>
+          <Pressable ref={menuTrigger} accessibilityRole="button" accessibilityLabel={t('hub.menu')} accessibilityState={{ expanded: menuOpen }} onPress={() => { restoreFocus.current = true; setMenuOpen(true); }} style={({ pressed }) => [styles.headerAction, pressed && { opacity: .65 }]}><MenuIcon name="menu" color={colors.primary} /></Pressable>
         </View>
-      </View>
-      {languageOpen && <View style={styles.languagePanel} accessibilityRole="radiogroup" accessibilityLabel={t('language')}>{(['en', 'my'] as const).map(language => {
-        const checked = i18n.resolvedLanguage === language;
-        const label = language === 'en' ? 'English' : 'မြန်မာ';
-        return <Pressable key={language} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ checked }} aria-checked={checked} onPress={() => { void changeLanguage(language); setLanguageOpen(false); }} style={[styles.languageOption, checked && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.languageOptionText}>{checked ? '✓ ' : ''}{label}</Copy></Pressable>;
-      })}</View>}
       {path !== '/' && <Pressable accessibilityRole="button" accessibilityLabel={t('hub.backHome')} onPress={() => router.navigate('/')} style={({ pressed }) => [styles.homeLink, pressed && { opacity: .65 }]}><Copy style={styles.homeLinkText}>‹  {t('hub.backHome')}</Copy></Pressable>}
       {(path === '/severance' || path === '/severance/guide' || path === '/guide') && <View accessibilityRole="tablist" style={styles.moduleTabs}>{([{ path: '/severance' as const, label: 'calculator' }, { path: '/severance/guide' as const, label: 'guide' }]).map(tab => {
         const selected = path === tab.path || (path === '/guide' && tab.path === '/severance/guide');
         return <Pressable key={tab.path} accessibilityRole="tab" accessibilityLabel={t(tab.label)} accessibilityState={{ selected }} onPress={() => { if (!selected) router.navigate(tab.path); }} style={({ pressed }) => [styles.moduleTab, selected && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><Copy style={[styles.moduleTabText, selected && { color: colors.primary }]}>{t(tab.label)}</Copy></Pressable>;
       })}</View>}
+
+      </View>
     </View>
-  </View>;
+    <Modal testID="header-menu-modal" visible={menuOpen} transparent animationType="none" onShow={() => { if (menuHeading.current) AccessibilityInfo.sendAccessibilityEvent(menuHeading.current, 'focus'); }} onRequestClose={closeMenu}>
+      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 40 }}>
+        <Pressable testID="header-menu-backdrop" accessibilityRole="button" accessibilityLabel={t('hub.dismissMenu')} onPress={closeMenu} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#091a15aa' }} />
+        <View accessibilityViewIsModal style={{ width: '100%', maxWidth: 420, maxHeight: '100%', alignSelf: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 22, backgroundColor: colors.surface }}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 18, gap: 12 }}>
+            <Copy ref={menuHeading} accessible accessibilityRole="header" style={styles.smallHeading}>{t('hub.menu')}</Copy>
+            <Pressable accessibilityRole="button" accessibilityLabel={t(resolvedTheme === 'dark' ? 'hub.switchToLight' : 'hub.switchToDark')} onPress={() => setMode(resolvedTheme === 'dark' ? 'light' : 'dark')} style={styles.popupAction}><MenuIcon name="appearance" theme={resolvedTheme} background={colors.surface} color={colors.primary} /><Copy style={{ flex: 1 }}>{t(resolvedTheme === 'dark' ? 'hub.switchToLight' : 'hub.switchToDark')}</Copy></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('language')} accessibilityState={{ expanded: languageOpen }} onPress={() => setLanguageOpen(value => !value)} style={styles.popupAction}><MenuIcon name="language" color={colors.primary} /><Copy style={{ flex: 1 }}>{t('language')}</Copy><Copy>{languageOpen ? '−' : '+'}</Copy></Pressable>
+            {languageOpen && <View accessibilityRole="radiogroup" accessibilityLabel={t('language')} style={{ gap: 8 }}>{(['en', 'my'] as const).map(language => {
+              const checked = i18n.resolvedLanguage === language;
+              const label = language === 'en' ? 'English' : 'မြန်မာ';
+              return <Pressable key={language} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ checked }} onPress={() => { void changeLanguage(language); closeMenu(); }} style={[styles.languageOption, checked && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }]}><Copy style={styles.languageOptionText}>{checked ? '✓ ' : ''}{label}</Copy></Pressable>;
+            })}</View>}
+            <Pressable accessibilityRole="button" accessibilityLabel={t('hub.search')} onPress={() => { closeMenu(); router.navigate('/search'); }} style={styles.popupAction}><MenuIcon name="search" color={colors.primary} /><Copy style={{ flex: 1 }}>{t('hub.search')}</Copy></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('aboutUs')} onPress={() => { closeMenu(); router.navigate('/about'); }} style={styles.popupAction}><MenuIcon name="about" color={colors.primary} /><Copy style={{ flex: 1 }}>{t('aboutUs')}</Copy></Pressable>
+            <Button title={t('hub.closeMenu')} secondary onPress={closeMenu} />
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  </>;
 }
-function MenuIcon({ name, color, theme, background }: { name: 'language' | 'appearance' | 'search'; color: string; theme?: 'light' | 'dark'; background?: string }) {
+function MenuIcon({ name, color, theme, background }: { name: 'language' | 'appearance' | 'search' | 'about' | 'menu'; color: string; theme?: 'light' | 'dark'; background?: string }) {
   const stroke = { borderColor: color, borderWidth: 2 };
   const line = { position: 'absolute' as const, height: 2, backgroundColor: color, borderRadius: 1 };
   const moon = theme === 'dark';
   return <View accessible={false} aria-hidden importantForAccessibility="no-hide-descendants" style={{ width: 22, height: 22, flexShrink: 0 }}>
+    {name === 'menu' && <>{[4, 10, 16].map(top => <View key={top} style={[line, { left: 1, right: 1, top }]} />)}</>}
     {(name === 'language' || (name === 'appearance' && !moon)) && <View style={[stroke, { position: 'absolute', width: 20, height: 20, left: 1, top: 1, borderRadius: 10 }]} />}
     {name === 'language' && <><View style={[stroke, { position: 'absolute', width: 8, height: 20, left: 7, top: 1, borderRadius: 10 }]} /><View style={[line, { left: 2, right: 2, top: 10 }]} /></>}
     {/* A sun shows a light appearance is active; a moon shows dark, so the
@@ -122,6 +147,7 @@ function MenuIcon({ name, color, theme, background }: { name: 'language' | 'appe
       <View style={{ position: 'absolute', width: 14, height: 14, left: 8, top: 1, borderRadius: 7, backgroundColor: background ?? 'transparent' }} />
     </>}
     {name === 'search' && <><View style={[stroke, { position: 'absolute', width: 13, height: 13, left: 2, top: 2, borderRadius: 7 }]} /><View style={[line, { width: 9, left: 13, top: 16, transform: [{ rotate: '45deg' }] }]} /></>}
+    {name === 'about' && <><View style={[stroke, { position: 'absolute', width: 20, height: 20, left: 1, top: 1, borderRadius: 10 }]} /><View style={{ position: 'absolute', width: 3, height: 3, borderRadius: 2, backgroundColor: color, left: 10, top: 6 }} /><View style={{ position: 'absolute', width: 2, height: 7, borderRadius: 1, backgroundColor: color, left: 10, top: 11 }} /></>}
   </View>;
 }
 function createStyles(colors: ThemeColors) { return StyleSheet.create({
@@ -133,6 +159,7 @@ function createStyles(colors: ThemeColors) { return StyleSheet.create({
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6 },
   brand: { fontSize: 22, fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif', fontWeight: '700', flex: 1, flexShrink: 1, lineHeight: 30, color: colors.primary },
   brandAccent: { color: colors.primary, fontSize: 22, fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif', fontWeight: '700', lineHeight: 30 },
+  popupAction: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerAction: { width: 44, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 22, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface },
   headerActionAccent: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent },

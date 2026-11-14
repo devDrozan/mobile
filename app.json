@@ -3,7 +3,7 @@
     "name": "E9 Mate Myanmar",
     "slug": "e9-severance-calculator",
     "scheme": "e9severance",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -17,7 +17,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.e9mate.myanmar"
+      "package": "com.e9mate.myanmar",
+      "allowBackup": false
     },
     "plugins": [
       "expo-router",
@@ -35,7 +36,19 @@
           }
         }
       ],
-      "expo-sqlite"
+      [
+  "expo-sqlite",
+  {
+    "useSQLCipher": true
+  }
+],
+      [
+  "react-native-google-mobile-ads",
+  {
+    "androidAppId": "ca-app-pub-7752680457121386~8251446871",
+    "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+  }
+]
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,6 +1,6 @@
-import { useRef, useState, type ComponentRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { router } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
+import { AccessibilityInfo, AppState, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Copy, useUi } from '../../components/ui';
 import type { ThemeColors } from '../../theme-colors';
@@ -22,40 +22,161 @@ const slides: readonly Slide[] = [
   { id: 'insurance-ad', labelKey: 'hub.sampleAd', titleKey: 'hub.hero.insuranceAdTitle', bodyKey: 'hub.hero.insuranceAdBody', actionKey: 'hub.openTool', route: '/insurance', color: '#2f3448', art: 'insurance' },
 ];
 
+type CarouselController = {
+  move: (direction: number, automatic?: boolean) => void;
+  pause: () => void; resume: () => void;
+  touchStart: () => void; touchEnd: () => void;
+  beginDrag: (offset: number) => void; endDrag: (offset: number) => void;
+  momentumStart: () => void; momentumEnd: (offset: number) => void; scroll: (offset: number) => void;
+};
+const loopingSlides = [slides[slides.length - 1], ...slides, slides[0]];
+
 export function HeroCarousel() {
   const { t } = useTranslation();
   const { colors } = useUi();
   const { width, fontScale } = useWindowDimensions();
   const styles = createStyles(colors);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const logical = useRef(0);
+  const physical = useRef(1);
+  const focused = useRef(false);
+  const appActive = useRef(AppState.currentState === 'active');
+  const reduceMotion = useRef(true);
+  const controller = useRef<CarouselController | null>(null);
   const [selected, setSelected] = useState(0);
   const viewport = Math.min(618, Math.max(0, width - 32));
   const cardWidth = viewport - 40;
   const interval = cardWidth + 12;
   const showArtwork = width >= 380 && fontScale < 1.2;
-  function show(index: number) {
-    const next = Math.max(0, Math.min(slides.length - 1, index));
-    setSelected(next);
-    scroll.current?.scrollTo({ x: next * interval, animated: false });
-  }
-  function sync(offset: number) { setSelected(Math.max(0, Math.min(slides.length - 1, Math.round(offset / interval)))); }
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    let touching = false, dragging = false, moving = false;
+    let appSubscription: ReturnType<typeof AppState.addEventListener> | undefined;
+    let motionSubscription: ReturnType<typeof AccessibilityInfo.addEventListener> | undefined;
+    let preferenceRead = 0;
+    let target: number | null = null;
+    let origin: 'manual' | 'auto' | null = null;
+    let offset = (logical.current + 1) * interval;
+    const clearTimer = () => { if (timer !== undefined) clearTimeout(timer); timer = undefined; };
+    const clearSettle = () => { if (settleTimer !== undefined) clearTimeout(settleTimer); settleTimer = undefined; };
+    const canonical = () => {
+      physical.current = logical.current + 1; offset = physical.current * interval;
+      scroll.current?.scrollTo({ x: offset, animated: false });
+    };
+    function arm() {
+      clearTimer();
+      if (!active || !focused.current || !appActive.current || touching || dragging) return;
+      timer = setTimeout(() => { timer = undefined; move(1, true); }, 4000);
+    }
+    function finish(value: number) {
+      if (!active || touching || dragging || !moving) return;
+      const index = Math.max(0, Math.min(slides.length + 1, Math.round(value / interval)));
+      // Ignore a late completion from an animation interrupted by another action.
+      if (target !== null && Math.abs(value / interval - target) > .25) return;
+      clearSettle();
+      logical.current = (index + slides.length - 1) % slides.length;
+      physical.current = index; setSelected(logical.current);
+      const wasAutomatic = origin === 'auto';
+      moving = false; target = null; origin = null; offset = value;
+      if (index === 0 || index === slides.length + 1) canonical();
+      if (!wasAutomatic || timer === undefined) arm();
+    }
+    function settleAfter(delay: number) {
+      clearSettle();
+      settleTimer = setTimeout(() => { settleTimer = undefined; finish(target === null ? offset : target * interval); }, delay);
+    }
+    function move(direction: number, automatic = false) {
+      if (!active || touching || dragging || automatic && (!focused.current || !appActive.current)) return;
+      clearTimer(); clearSettle();
+      if (moving) canonical();
+      target = physical.current + direction;
+      logical.current = (logical.current + direction + slides.length) % slides.length;
+      setSelected(logical.current);
+      if (reduceMotion.current) {
+        moving = false; target = null; origin = null; canonical(); arm();
+      } else {
+        physical.current = target; moving = true; origin = automatic ? 'auto' : 'manual';
+        scroll.current?.scrollTo({ x: target * interval, animated: true });
+        // Some platforms omit momentum-end for scrollTo; complete the adjacent
+        // transition and rewind its sentinel if native completion never arrives.
+        settleAfter(700);
+        if (automatic) arm();
+      }
+    }
+    function stop() {
+      clearTimer(); clearSettle(); touching = false; dragging = false; moving = false; target = null; origin = null;
+      canonical();
+    }
+    function detach() {
+      appSubscription?.remove(); motionSubscription?.remove();
+      appSubscription = undefined; motionSubscription = undefined; preferenceRead++;
+    }
+    function resume() {
+      if (!appSubscription) {
+        appActive.current = AppState.currentState === 'active';
+        appSubscription = AppState.addEventListener('change', state => {
+          appActive.current = state === 'active';
+          if (appActive.current) { canonical(); arm(); } else stop();
+        });
+        motionSubscription = AccessibilityInfo.addEventListener('reduceMotionChanged', value => {
+          reduceMotion.current = value;
+          if (value && moving && target !== null && !dragging && !touching) finish(target * interval);
+        });
+        const read = ++preferenceRead;
+        void AccessibilityInfo.isReduceMotionEnabled().then(value => { if (active && read === preferenceRead) reduceMotion.current = value; }).catch(() => { if (active && read === preferenceRead) reduceMotion.current = true; });
+      }
+      canonical(); arm();
+    }
+    const actions: CarouselController = {
+      move, pause: () => { stop(); detach(); }, resume,
+      touchStart: () => { touching = true; clearTimer(); },
+      touchEnd: () => { touching = false; if (!dragging) { if (moving) settleAfter(target === null ? 180 : 700); else arm(); } },
+      beginDrag: value => { if (!focused.current || !appActive.current) return; clearTimer(); clearSettle(); offset = value; target = null; dragging = true; moving = true; origin = 'manual'; },
+      endDrag: value => { if (!focused.current || !appActive.current) return; offset = value; dragging = false; moving = true; origin = 'manual'; settleAfter(180); },
+      momentumStart: () => { if (!focused.current || !appActive.current) return; moving = true; settleAfter(700); },
+      momentumEnd: finish,
+      scroll: value => { offset = value; if (moving && !dragging && target === null) settleAfter(180); },
+    };
+    controller.current = actions;
+    if (focused.current) resume(); else canonical();
+    return () => {
+      active = false; clearTimer(); clearSettle(); detach();
+      if (controller.current === actions) controller.current = null;
+    };
+  }, [interval]);
+  useFocusEffect(useCallback(() => {
+    focused.current = true; controller.current?.resume();
+    return () => { focused.current = false; controller.current?.pause(); };
+  }, []));
   return <View style={styles.section}>
-    <ScrollView ref={scroll} horizontal directionalLockEnabled nestedScrollEnabled snapToInterval={interval} decelerationRate="fast" showsHorizontalScrollIndicator={false} style={{ width: viewport, alignSelf: 'center' }} contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }} onScrollEndDrag={event => sync(event.nativeEvent.contentOffset.x)} onMomentumScrollEnd={event => sync(event.nativeEvent.contentOffset.x)}>
-      {slides.map((slide, index) => <Pressable key={slide.id} accessibilityRole="button" accessibilityLabel={t(slide.labelKey) + '. ' + t(slide.titleKey) + '. ' + t('hub.position', { current: index + 1, total: slides.length })} onPress={() => router.navigate(slide.route)} style={({ pressed }) => [styles.card, { width: cardWidth, backgroundColor: slide.color }, pressed && { opacity: .78 }]}>
-        <View style={styles.glow} />
-        {showArtwork && <HeroArtwork kind={slide.art} />}
-        <View style={[styles.copyArea, showArtwork && styles.copyAreaWithArt]}>
-          <Copy nativeMyanmarLineMetrics style={styles.label}>{t(slide.labelKey)}</Copy>
-          <Copy nativeMyanmarLineMetrics style={styles.title}>{t(slide.titleKey)}</Copy>
-          <Copy nativeMyanmarLineMetrics style={styles.body}>{t(slide.bodyKey)}</Copy>
-          <View style={styles.action}><Copy nativeMyanmarLineMetrics style={styles.actionText}>{t(slide.actionKey)}  →</Copy></View>
-        </View>
-      </Pressable>)}
+    <ScrollView testID="hero-carousel" ref={scroll} horizontal directionalLockEnabled nestedScrollEnabled snapToInterval={interval} decelerationRate="fast" showsHorizontalScrollIndicator={false} scrollEventThrottle={16} contentOffset={{ x: interval, y: 0 }} style={{ width: viewport, alignSelf: 'center' }} contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }}
+      onTouchStart={() => controller.current?.touchStart()} onTouchEnd={() => controller.current?.touchEnd()} onTouchCancel={() => controller.current?.touchEnd()}
+      onScrollBeginDrag={event => controller.current?.beginDrag(event.nativeEvent.contentOffset.x)} onScrollEndDrag={event => controller.current?.endDrag(event.nativeEvent.contentOffset.x)}
+      onMomentumScrollBegin={() => controller.current?.momentumStart()} onMomentumScrollEnd={event => controller.current?.momentumEnd(event.nativeEvent.contentOffset.x)} onScroll={event => controller.current?.scroll(event.nativeEvent.contentOffset.x)}>
+      {loopingSlides.map((slide, physicalIndex) => {
+        const clone = physicalIndex === 0 || physicalIndex === slides.length + 1;
+        const index = (physicalIndex + slides.length - 1) % slides.length;
+        const content = <>
+          <View style={styles.glow} />
+          {showArtwork && <HeroArtwork kind={slide.art} />}
+          <View style={[styles.copyArea, showArtwork && styles.copyAreaWithArt]}>
+            <Copy nativeMyanmarLineMetrics style={styles.label}>{t(slide.labelKey)}</Copy>
+            <Copy nativeMyanmarLineMetrics style={styles.title}>{t(slide.titleKey)}</Copy>
+            <Copy nativeMyanmarLineMetrics style={styles.body}>{t(slide.bodyKey)}</Copy>
+            <View style={styles.action}><Copy nativeMyanmarLineMetrics style={styles.actionText}>{t(slide.actionKey)}  →</Copy></View>
+          </View>
+        </>;
+        return clone
+          ? <View key={`clone-${physicalIndex}`} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={[styles.card, { width: cardWidth, backgroundColor: slide.color }]}>{content}</View>
+          : <Pressable key={slide.id} accessibilityRole="button" accessibilityLabel={t(slide.labelKey) + '. ' + t(slide.titleKey) + '. ' + t('hub.position', { current: index + 1, total: slides.length })} onPress={() => router.navigate(slide.route)} style={({ pressed }) => [styles.card, { width: cardWidth, backgroundColor: slide.color }, pressed && { opacity: .78 }]}>{content}</Pressable>;
+      })}
     </ScrollView>
     <View style={styles.controls}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('hub.previousSlide')} accessibilityState={{ disabled: selected === 0 }} disabled={selected === 0} onPress={() => show(selected - 1)} style={({ pressed }) => [styles.controlButton, (selected === 0 || pressed) && { opacity: .45 }]}><Copy style={styles.controlText}>‹</Copy></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('hub.previousSlide')} onPress={() => controller.current?.move(-1)} style={({ pressed }) => [styles.controlButton, pressed && { opacity: .45 }]}><Copy style={styles.controlText}>‹</Copy></Pressable>
       <View style={styles.dots} accessible accessibilityLabel={t('hub.position', { current: selected + 1, total: slides.length })} accessibilityLiveRegion="polite">{slides.map((slide, index) => <View key={slide.id} style={[styles.dot, selected === index && styles.selectedDot]} />)}</View>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('hub.nextSlide')} accessibilityState={{ disabled: selected === slides.length - 1 }} disabled={selected === slides.length - 1} onPress={() => show(selected + 1)} style={({ pressed }) => [styles.controlButton, (selected === slides.length - 1 || pressed) && { opacity: .45 }]}><Copy style={styles.controlText}>›</Copy></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('hub.nextSlide')} onPress={() => controller.current?.move(1)} style={({ pressed }) => [styles.controlButton, pressed && { opacity: .45 }]}><Copy style={styles.controlText}>›</Copy></Pressable>
     </View>
   </View>;
 }

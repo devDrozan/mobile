@@ -45,3 +45,9 @@ yarn-error.*
 !.env.example
 coverage/
 dist/
+
+# Old native build backup and signing material
+/android-backup/
+*.keystore
+*.aab
+*.apk

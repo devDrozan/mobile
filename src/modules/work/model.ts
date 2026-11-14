@@ -23,6 +23,38 @@ export function monthDates(month: string): string[] {
   return Array.from({ length: days }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`);
 }
 const hundredths = (value: string) => { const [whole, fraction = ''] = value.split('.'); return Number(whole) * 100 + Number(fraction.padEnd(2, '0')); };
+function fromHundredths(value: number): string {
+  const whole = Math.floor(value / 100);
+  const fraction = value % 100;
+  if (!fraction) return String(whole);
+  return `${whole}.${fraction % 10 === 0 ? String(fraction / 10) : String(fraction).padStart(2, '0')}`;
+}
+const minutesToHundredths = (minutes: number) => Math.round(minutes * 5 / 3);
+// Accept the ways people actually type time. A bare whole number through 24 is
+// hours; anything larger is minutes because a 30-hour day is almost certainly a
+// mistyped 30 minutes. Clock time (1:30) and decimal hours (1.5) are explicit.
+export function normalizeHours(value: string): string | null {
+  const text = value.trim();
+  if (!text) return null;
+  const clock = text.match(/^(\d{1,3}):([0-5]?\d)$/);
+  if (clock) return fromHundredths(minutesToHundredths(Number(clock[1]) * 60 + Number(clock[2])));
+  if (text.includes(':')) return null;
+  if (text.includes('.')) {
+    const match = text.match(/^(\d*)\.(\d*)$/);
+    if (!match || (!match[1] && !match[2])) return null;
+    const whole = match[1] || '0';
+    if (whole.replace(/^0+/, '').length > 3) return null;
+    const fraction = (match[2] + '000').slice(0, 3);
+    return fromHundredths(Number(whole) * 100 + Number(fraction.slice(0, 2)) + (Number(fraction[2]) >= 5 ? 1 : 0));
+  }
+  if (!/^\d{1,4}$/.test(text)) return null;
+  const amount = Number(text);
+  return fromHundredths(amount <= 24 ? amount * 100 : minutesToHundredths(amount));
+}
+export function normalizeSalaryInput(input: SalaryInput): SalaryInput {
+  const hours = (value: string) => normalizeHours(value) ?? value;
+  return { ...input, entries: input.entries.map(entry => ({ ...entry, normalHours: hours(entry.normalHours), overtimeHours: hours(entry.overtimeHours), nightHours: hours(entry.nightHours) })) };
+}
 export function validateMonth(input: SalaryInput): Record<string, string> {
   const errors: Record<string, string> = {};
   settingKeys.forEach(key => { if (!validMoney(input.settings[key])) errors[`settings.${key}`] = 'INVALID_VALUE'; });
@@ -32,11 +64,11 @@ export function validateMonth(input: SalaryInput): Record<string, string> {
     if (!dates.has(entry.date)) errors[`${prefix}.date`] = 'INVALID_DATE';
     if (seen.has(entry.date)) errors[`${prefix}.date`] = 'DUPLICATE_DATE';
     seen.add(entry.date);
-    hourKeys.forEach(key => { if (!/^(0|[1-9]\d?)(\.\d{1,2})?$/.test(entry[key])) errors[`${prefix}.${key}`] = 'INVALID_HOURS'; });
+    hourKeys.forEach(key => { if (normalizeHours(entry[key]) === null) errors[`${prefix}.${key}`] = 'INVALID_HOURS'; });
     if (hourKeys.some(key => errors[`${prefix}.${key}`])) return;
-    const total = hundredths(entry.normalHours) + hundredths(entry.overtimeHours);
+    const total = hundredths(normalizeHours(entry.normalHours)!) + hundredths(normalizeHours(entry.overtimeHours)!);
     if (total > 2400) errors[`${prefix}.overtimeHours`] = 'DAILY_HOURS_EXCEEDED';
-    if (hundredths(entry.nightHours) > total) errors[`${prefix}.nightHours`] = 'NIGHT_HOURS_EXCEEDED';
+    if (hundredths(normalizeHours(entry.nightHours)!) > total) errors[`${prefix}.nightHours`] = 'NIGHT_HOURS_EXCEEDED';
   });
   return errors;
 }
@@ -49,7 +81,8 @@ export function decodeStoredMonth(payload: string, expectedMonth?: string): Sala
   if (!value.entries.every(entry => entry && typeof entry === 'object' && typeof entry.date === 'string' && hourKeys.every(key => typeof entry[key] === 'string'))) throw new Error('INVALID_STORED_DATA');
   const draft = value as SalaryInput;
   if (Object.keys(validateMonth(draft)).length) throw new Error('INVALID_STORED_DATA');
+  const normalized = normalizeSalaryInput(draft);
   // Read only approved input properties; saved estimates or unknown fields never
   // enter the module session or the API submission.
-  return { month: draft.month, settings: Object.fromEntries(settingKeys.map(key => [key, draft.settings[key]])) as PaySettings, entries: draft.entries.map(entry => ({ date: entry.date, normalHours: entry.normalHours, overtimeHours: entry.overtimeHours, nightHours: entry.nightHours })) };
+  return { month: normalized.month, settings: Object.fromEntries(settingKeys.map(key => [key, normalized.settings[key]])) as PaySettings, entries: normalized.entries.map(entry => ({ date: entry.date, normalHours: entry.normalHours, overtimeHours: entry.overtimeHours, nightHours: entry.nightHours })) };
 }

@@ -39,12 +39,12 @@ function ServiceCard({ module, oneColumn, compact = false }: { module: ModuleDef
   const available = module.status === 'available';
   const title = t(module.titleKey);
   const accent = accents[module.id] ?? accents.severance;
-  return <Pressable accessibilityRole="button" accessibilityLabel={t(available ? 'hub.openNamed' : 'hub.comingSoonNamed', { name: title }) + '. ' + t(available ? 'hub.available' : 'hub.comingSoon')} onPress={() => openModule(module)} style={({ pressed }) => [styles.card, oneColumn ? styles.fullCard : styles.halfCard, compact && styles.compactCard, pressed && { opacity: .72 }]}>
-    <View style={styles.cardHeader}>
+  return <Pressable accessibilityRole="button" accessibilityLabel={t(available ? 'hub.openNamed' : 'hub.comingSoonNamed', { name: title }) + '. ' + t(available ? 'hub.available' : 'hub.comingSoon')} onPress={() => openModule(module)} style={({ pressed }) => [styles.card, oneColumn ? styles.fullCard : styles.halfCard, compact && styles.compactCard, available && styles.availableCard, pressed && { opacity: .72 }]}>
+    <View style={[styles.cardHeader, available && styles.availableHeader]}>
       <View accessible={false} style={[styles.symbolTile, { backgroundColor: accent.background, borderColor: accent.border }]}><ModuleSymbol id={module.id} color={accent.text} size={26} /></View>
       <Copy nativeMyanmarLineMetrics style={styles.cardTitle}>{title}</Copy>
     </View>
-    <View style={styles.badgeSlot}>{!available && <Copy nativeMyanmarLineMetrics style={styles.plannedBadge}>{t('hub.comingSoon')}</Copy>}</View>
+    {!available && <View style={styles.badgeSlot}><Copy nativeMyanmarLineMetrics style={styles.plannedBadge}>{t('hub.comingSoon')}</Copy></View>}
     <Copy nativeMyanmarLineMetrics style={styles.description}>{t(module.descriptionKey)}</Copy>
     <View accessible={false} style={styles.arrowCircle}><Copy style={styles.arrow}>→</Copy></View>
   </Pressable>;
@@ -53,6 +53,7 @@ function ServiceCard({ module, oneColumn, compact = false }: { module: ModuleDef
 const accents: Record<string, { background: string; border: string; text: string }> = {
   severance: { background: '#274b31', border: '#719a67', text: '#d6efb3' },
   work: { background: '#173e4e', border: '#447d91', text: '#c4e9ee' },
+  expenses: { background: '#4c3327', border: '#a57b60', text: '#ffe0c4' },
   insurance: { background: '#39304f', border: '#8575a5', text: '#ece2ff' },
   exchange: { background: '#4b3a1d', border: '#a58742', text: '#ffe09a' },
   finance: { background: '#35443b', border: '#657e6c', text: '#dbe8d8' },
@@ -68,7 +69,9 @@ function createStyles(colors: ThemeColors, dark: boolean) { return StyleSheet.cr
   halfCard: { flexBasis: '47%', flexGrow: 1 },
   fullCard: { flexBasis: '100%' },
   compactCard: { minHeight: 190 },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, minHeight: 72 },
+  availableCard: { minHeight: 0 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 72 },
+  availableHeader: { minHeight: 48 },
   symbolTile: { width: 48, height: 48, borderWidth: 1, borderRadius: 15, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   cardTitle: { color: colors.text, fontSize: 14, lineHeight: 23, flex: 1, flexShrink: 1, minWidth: 0, fontFamily: 'NotoSansMyanmar_600SemiBold' },
   // Anchoring the status and description to the bottom keeps the badge row level

@@ -84,6 +84,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/exchange-rates/krw-mmk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getKrwMmkRate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/currency-conversions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["convertCurrency"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/currency-conversions/hundi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["convertCurrencyHundi"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/exchange-rates/krw-mmk/cbm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCbmKrwMmkRate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/currency-conversions/cbm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["convertCurrencyCbm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -448,6 +528,522 @@ export interface operations {
             };
             /** @description Default Response */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    getKrwMmkRate: {
+        parameters: {
+            query?: {
+                refresh?: "true" | "false";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        quoteId: string;
+                        provider: "kb" | "kmb" | "hana";
+                        sourceName: string;
+                        sourceUrl: string;
+                        /** @enum {string} */
+                        rateType: "REFERENCE";
+                        publicationDate: string;
+                        publishedAt: string | null;
+                        publicationPrecision: "DATE" | "SECOND";
+                        retrievedAt: string;
+                        expiresAt: string;
+                        freshness: "PUBLISHED_TODAY" | "PREVIOUS_PUBLISHED_RATE";
+                        krwPerQuotedUnit: string;
+                        mmkUnit: string;
+                        mmkPerKrw: string;
+                        krwPerMmk: string;
+                        /** @enum {number} */
+                        rateDisplayDecimalPlaces: 12;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    convertCurrency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    from: "KRW" | "MMK";
+                    to: "KRW" | "MMK";
+                    amount: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        from: "KRW" | "MMK";
+                        to: "KRW" | "MMK";
+                        amount: string;
+                        convertedAmount: string;
+                        belowDisplayPrecision: boolean;
+                        quote: {
+                            quoteId: string;
+                            provider: "kb" | "kmb" | "hana";
+                            sourceName: string;
+                            sourceUrl: string;
+                            /** @enum {string} */
+                            rateType: "REFERENCE";
+                            publicationDate: string;
+                            publishedAt: string | null;
+                            publicationPrecision: "DATE" | "SECOND";
+                            retrievedAt: string;
+                            expiresAt: string;
+                            freshness: "PUBLISHED_TODAY" | "PREVIOUS_PUBLISHED_RATE";
+                            krwPerQuotedUnit: string;
+                            mmkUnit: string;
+                            mmkPerKrw: string;
+                            krwPerMmk: string;
+                            /** @enum {number} */
+                            rateDisplayDecimalPlaces: 12;
+                        };
+                        /** @enum {string} */
+                        calculationVersion: "krw-mmk-reference-1";
+                        /** @enum {number} */
+                        calculationPrecision: 80;
+                        /** @enum {string} */
+                        rounding: "FLOOR_ONCE";
+                        decimalPlaces: 0 | 2;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    convertCurrencyHundi: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    from: "KRW" | "MMK";
+                    to: "KRW" | "MMK";
+                    amount: string;
+                    mmkPerUsd: string;
+                    usdPerKrw: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        from: "KRW" | "MMK";
+                        to: "KRW" | "MMK";
+                        amount: string;
+                        convertedAmount: string;
+                        belowDisplayPrecision: boolean;
+                        rates: {
+                            mmkPerUsd: string;
+                            usdPerKrw: string;
+                            mmkPerKrw: string;
+                        };
+                        /** @enum {string} */
+                        calculationVersion: "krw-mmk-hundi-1";
+                        /** @enum {number} */
+                        calculationPrecision: 80;
+                        /** @enum {string} */
+                        rounding: "FLOOR_ONCE";
+                        decimalPlaces: 0 | 2;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    getCbmKrwMmkRate: {
+        parameters: {
+            query?: {
+                refresh?: "true" | "false";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        quoteId: string;
+                        /** @enum {string} */
+                        provider: "cbm";
+                        sourceName: string;
+                        sourceUrl: string;
+                        /** @enum {string} */
+                        rateType: "MARKET_TRADING";
+                        /** @enum {string} */
+                        sourceTimeZone: "Asia/Yangon";
+                        publicationDate: string;
+                        /** @enum {object|null} */
+                        publishedAt: never | null;
+                        /** @enum {string} */
+                        publicationPrecision: "DATE";
+                        retrievedAt: string;
+                        expiresAt: string;
+                        freshness: "PUBLISHED_TODAY" | "PREVIOUS_PUBLISHED_RATE";
+                        /** @enum {string} */
+                        quotedKrw: "100";
+                        mmkPer100Krw: string;
+                        mmkPerKrw: string;
+                        referenceMmkPer100Krw: string;
+                        referenceMmkPerKrw: string;
+                        referenceSourceUrl: string;
+                        /** @enum {string} */
+                        krwPerQuotedUnit: "100";
+                        mmkUnit: string;
+                        krwPerMmk: string;
+                        /** @enum {number} */
+                        rateDisplayDecimalPlaces: 14;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    convertCurrencyCbm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    from: "KRW" | "MMK";
+                    to: "KRW" | "MMK";
+                    amount: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        from: "KRW" | "MMK";
+                        to: "KRW" | "MMK";
+                        amount: string;
+                        convertedAmount: string;
+                        belowDisplayPrecision: boolean;
+                        quote: {
+                            quoteId: string;
+                            /** @enum {string} */
+                            provider: "cbm";
+                            sourceName: string;
+                            sourceUrl: string;
+                            /** @enum {string} */
+                            rateType: "MARKET_TRADING";
+                            /** @enum {string} */
+                            sourceTimeZone: "Asia/Yangon";
+                            publicationDate: string;
+                            /** @enum {object|null} */
+                            publishedAt: never | null;
+                            /** @enum {string} */
+                            publicationPrecision: "DATE";
+                            retrievedAt: string;
+                            expiresAt: string;
+                            freshness: "PUBLISHED_TODAY" | "PREVIOUS_PUBLISHED_RATE";
+                            /** @enum {string} */
+                            quotedKrw: "100";
+                            mmkPer100Krw: string;
+                            mmkPerKrw: string;
+                            referenceMmkPer100Krw: string;
+                            referenceMmkPerKrw: string;
+                            referenceSourceUrl: string;
+                            /** @enum {string} */
+                            krwPerQuotedUnit: "100";
+                            mmkUnit: string;
+                            krwPerMmk: string;
+                            /** @enum {number} */
+                            rateDisplayDecimalPlaces: 14;
+                        };
+                        /** @enum {string} */
+                        calculationVersion: "krw-mmk-cbm-market-1";
+                        /** @enum {number} */
+                        calculationPrecision: 80;
+                        /** @enum {string} */
+                        rounding: "FLOOR_ONCE";
+                        decimalPlaces: 0 | 2;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        message: string;
+                        issues: {
+                            field: string;
+                            code: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -30,6 +30,11 @@ export function ModuleSymbol({ id, color, size = 24 }: { id: string; color: stri
       <View style={solid(2, 7, 11, 5.5, 1)} />
       <View style={solid(6, 2, 12, 11, 1)} />
     </>}
+    {id === 'expenses' && <>
+      {/* Receipt with three item lines. */}
+      <View style={[stroke, { position: 'absolute', left: px(4), top: px(1), width: px(16), height: px(22), borderRadius: px(2) }]} />
+      <View style={solid(9, 2, 7.5, 6)} /><View style={solid(9, 2, 7.5, 11)} /><View style={solid(6, 2, 7.5, 16)} />
+    </>}
     {id === 'insurance' && <>
       {/* Medical cross. */}
       <View style={solid(6, 20, 9, 2, 1.5)} />

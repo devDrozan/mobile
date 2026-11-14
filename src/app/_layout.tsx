@@ -1,3 +1,5 @@
+import { LocalDataNoticeProvider } from '../local-data-notice';
+import { FeatureBannerAd } from '../components/FeatureBannerAd';
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +11,8 @@ import { Header } from '../components/ui';
 import { CalculatorSessionProvider } from '../calculator-session';
 import { AppThemeProvider, useAppTheme } from '../theme';
 import { LaunchGate } from '../components/LaunchGate';
+import { ExpenseSessionProvider } from '../modules/expenses/session';
+import { SalaryDraftSessionProvider } from '../modules/work/session';
 import { HubFooter } from '../modules/hub/HubFooter';
 
 // Hold the native cover until our branded view has laid out.
@@ -32,5 +36,5 @@ function ThemedLayout() {
   // Render the branded view immediately: readiness gates only the interface, and
   // preference reads have their own timeout, so a stalled store cannot leave the
   // user on a blank screen behind the native splash.
-  return <><StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} /><LaunchGate ready={themeReady && languageReady && (loaded || !!error)}><CalculatorSessionProvider><SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}><Header /><Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} /><HubFooter /></SafeAreaView></CalculatorSessionProvider></LaunchGate></>;
+  return <><StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} /><LaunchGate ready={themeReady && languageReady && (loaded || !!error)}><LocalDataNoticeProvider><CalculatorSessionProvider><SalaryDraftSessionProvider><ExpenseSessionProvider><SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}><Header /><Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} /><FeatureBannerAd /><HubFooter /></SafeAreaView></ExpenseSessionProvider></SalaryDraftSessionProvider></CalculatorSessionProvider></LocalDataNoticeProvider></LaunchGate></>;
 }

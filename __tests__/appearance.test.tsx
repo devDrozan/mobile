@@ -77,53 +77,68 @@ it('ignores invalid saved values and still changes appearance when storage fails
   expect(screen.getByTestId('appearance')).toHaveTextContent('dark/dark');
 });
 
-it.each(['en', 'my'])('offers direct theme, language and search actions in %s', async language => {
+it.each(['en', 'my'])('groups theme, language and search in the hamburger popup in %s', async language => {
   await act(() => i18n.changeLanguage(language));
   await render(<AppThemeProvider><Header /></AppThemeProvider>);
   expect(screen.getByText('E9')).toBeOnTheScreen();
-  const theme = screen.getByRole('button', { name: i18n.t('hub.switchToDark') });
-  const languageButton = screen.getByRole('button', { name: i18n.t('language') });
-  const searchButton = screen.getByRole('button', { name: i18n.t('hub.search') });
-  await fireEvent.press(theme);
+  expect(screen.queryByRole('button', { name: i18n.t('hub.search') })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.switchToDark') }));
   expect(screen.getByRole('button', { name: i18n.t('hub.switchToLight') })).toBeOnTheScreen();
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'dark');
-  await fireEvent.press(languageButton);
-  expect(languageButton).toBeExpanded();
+  const languageButton = screen.getByRole('button', { name: i18n.t('language') });
+  await fireEvent.press(languageButton); expect(languageButton).toBeExpanded();
   expect(screen.getByRole('radio', { name: language === 'en' ? 'English' : 'မြန်မာ' })).toBeChecked();
   await fireEvent.press(screen.getByRole('radio', { name: language === 'en' ? 'မြန်မာ' : 'English' }));
-  expect(screen.getByRole('button', { name: i18n.t('language') })).not.toBeExpanded();
-  await fireEvent.press(searchButton);
+  expect(screen.getByRole('button', { name: i18n.t('hub.menu') })).not.toBeExpanded();
+  expect(screen.queryByRole('radio')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.search') }));
   expect(router.navigate).toHaveBeenCalledWith('/search');
+  expect(screen.getByRole('button', { name: i18n.t('hub.menu') })).not.toBeExpanded();
 });
-
-it('follows the device theme until the header theme icon is tapped', async () => {
+it('follows device theme until the popup theme action is tapped', async () => {
   jest.mocked(AsyncStorage.getItem).mockResolvedValueOnce('system');
   jest.mocked(useColorScheme).mockReturnValue('dark');
   const tree = () => <AppThemeProvider><Header /></AppThemeProvider>;
   const view = await render(tree());
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
   expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeOnTheScreen();
-  jest.mocked(useColorScheme).mockReturnValue('light');
-  await view.rerender(tree());
+  jest.mocked(useColorScheme).mockReturnValue('light'); await view.rerender(tree());
   await fireEvent.press(screen.getByRole('button', { name: 'Switch to dark mode' }));
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('e9-theme', 'dark');
-  jest.mocked(useColorScheme).mockReturnValue('light');
-  await view.rerender(tree());
+  jest.mocked(useColorScheme).mockReturnValue('light'); await view.rerender(tree());
   expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeOnTheScreen();
 });
-
-it('keeps module navigation available and closes language choices on route changes', async () => {
+it('dismisses the popup via Close and backdrop and resets it on route changes', async () => {
   jest.mocked(usePathname).mockReturnValue('/severance');
   const tree = () => <AppThemeProvider><Header /></AppThemeProvider>;
   const view = await render(tree());
-  await fireEvent.press(screen.getByRole('button', { name: 'Language' }));
-  expect(screen.getByRole('button', { name: 'Language' })).toBeExpanded();
-  await fireEvent.press(screen.getByRole('tab', { name: i18n.t('guide') }));
-  expect(router.navigate).toHaveBeenCalledWith('/severance/guide');
-  jest.mocked(usePathname).mockReturnValue('/severance/guide');
-  await view.rerender(tree());
-  expect(screen.getByRole('button', { name: 'Language' })).not.toBeExpanded();
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.closeMenu') }));
+  expect(screen.queryByRole('button', { name: i18n.t('hub.search') })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
+  await fireEvent.press(screen.getByTestId('header-menu-backdrop', { includeHiddenElements: true }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
+  await fireEvent(screen.getByTestId('header-menu-modal', { includeHiddenElements: true }), 'requestClose');
+  expect(screen.queryByRole('button', { name: i18n.t('hub.search') })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('language') }));
+  jest.mocked(usePathname).mockReturnValue('/severance/guide'); await view.rerender(tree());
+  expect(screen.getByRole('button', { name: i18n.t('hub.menu') })).not.toBeExpanded();
+  expect(screen.queryByRole('radio')).toBeNull();
+  await fireEvent.press(screen.getByRole('tab', { name: i18n.t('calculator') }));
+  expect(router.navigate).toHaveBeenCalledWith('/severance');
   await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.backHome') }));
   expect(router.navigate).toHaveBeenCalledWith('/');
+});
+
+it('opens About us from the header menu and closes the popup', async () => {
+  await render(<AppThemeProvider><Header /></AppThemeProvider>);
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('aboutUs') }));
+  expect(router.navigate).toHaveBeenCalledWith('/about');
+  expect(screen.queryByRole('button', { name: i18n.t('hub.search') })).toBeNull();
 });
 
 it('retains the current wage draft and step through theme, language and About navigation', async () => {
@@ -137,12 +152,14 @@ it('retains the current wage draft and step through theme, language and About na
   const view = await render(route(true));
   await enterWages();
   await fireEvent.changeText(screen.getByLabelText('Base pay', { exact: false }), '123456.789012');
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
   await fireEvent.press(screen.getByRole('button', { name: 'Switch to dark mode' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Language' }));
   await fireEvent.press(screen.getByRole('radio', { name: 'မြန်မာ' }));
   expect(screen.getByLabelText(i18n.t('basePay'), { exact: false })).toHaveDisplayValue('123456.789012');
   await view.rerender(route(false));
   expect(screen.getByText(i18n.t('aboutCreator'))).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.menu') }));
   await fireEvent.press(screen.getByRole('button', { name: i18n.t('hub.switchToLight') }));
   await fireEvent.press(screen.getByRole('button', { name: i18n.t('language') }));
   await fireEvent.press(screen.getByRole('radio', { name: 'English' }));

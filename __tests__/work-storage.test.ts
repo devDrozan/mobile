@@ -1,33 +1,34 @@
 import { emptyMonth } from '../src/modules/work/model';
+import { blankLeave } from '../src/modules/work/leave';
 jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 const months = new Map<string, string>();
-let disclosure: string | undefined;
+const preferences = new Map<string, string>();
 let version = 0;
 const runAsync = jest.fn(async (query: string, ...args: string[]) => {
   if (query.startsWith('INSERT INTO work_months')) months.set(args[0], args[1]);
-  if (query.startsWith('INSERT INTO work_preferences')) disclosure = args[1];
+  if (query.startsWith('INSERT INTO work_preferences')) preferences.set(args[0], args[1]);
   if (query.startsWith('DELETE FROM work_months WHERE')) months.delete(args[0]);
   return { changes: 1, lastInsertRowId: 1 };
 });
 const execAsync = jest.fn(async (query: string) => {
   if (query.includes('PRAGMA user_version = 1')) version = 1;
   if (query.includes('DELETE FROM work_months;')) months.clear();
-  if (query.includes('DELETE FROM work_preferences;')) disclosure = undefined;
+  if (query.includes('DELETE FROM work_preferences;')) preferences.clear();
 });
 const connection = {
   runAsync, execAsync,
   closeAsync: jest.fn(async () => {}),
   getFirstAsync: jest.fn(async (query: string, ...args: string[]) => {
     if (query === 'PRAGMA user_version') return { user_version: version };
-    if (query.includes('work_preferences')) return disclosure ? { value: disclosure } : null;
+    if (query.includes('work_preferences')) return preferences.has(args[0]) ? { value: preferences.get(args[0]) } : null;
     if (query.includes('WHERE month =')) return months.has(args[0]) ? { payload: months.get(args[0]) } : null;
     const previous = [...months.keys()].filter(key => key < args[0]).sort().at(-1);
     return previous ? { month: previous, payload: months.get(previous) } : null;
   }),
   withExclusiveTransactionAsync: jest.fn(async (action: (transaction: { runAsync: typeof runAsync; execAsync: typeof execAsync }) => Promise<void>) => {
-    const snapshot = new Map(months); const oldDisclosure = disclosure;
+    const snapshot = new Map(months); const savedPreferences = new Map(preferences);
     try { await action({ runAsync, execAsync }); }
-    catch (error) { months.clear(); snapshot.forEach((value, key) => months.set(key, value)); disclosure = oldDisclosure; throw error; }
+    catch (error) { months.clear(); snapshot.forEach((value, key) => months.set(key, value)); preferences.clear(); savedPreferences.forEach((value, key) => preferences.set(key, value)); throw error; }
   }),
 };
 function storage() {
@@ -35,7 +36,7 @@ function storage() {
   require('expo-sqlite').openDatabaseAsync.mockResolvedValue(connection);
   return require('../src/modules/work/storage.native') as typeof import('../src/modules/work/storage.native');
 }
-beforeEach(() => { months.clear(); disclosure = undefined; version = 0; jest.clearAllMocks(); });
+beforeEach(() => { months.clear(); preferences.clear(); version = 0; jest.clearAllMocks(); });
 it('migrates once and restores saved values across a module restart with isolated month snapshots', async () => {
   const first = storage();
   expect((await first.loadMonth('2026-11')).consented).toBe(false);
@@ -72,4 +73,28 @@ it('rolls back a partial save if storing disclosure fails', async () => {
   runAsync.mockImplementationOnce(async (_query, ...args) => { months.set(args[0], args[1]); return { changes: 1, lastInsertRowId: 1 }; }).mockRejectedValueOnce(new Error('disk full'));
   await expect(store.saveMonth(changed)).rejects.toThrow('disk full');
   expect((await store.loadMonth('2026-11')).draft.settings.basicSalary).toBe('100');
+});
+it('stores flexible hour input as normalized decimal hours', async () => {
+  const store = storage();
+  const draft = emptyMonth('2026-11');
+  draft.entries = [{ date: '2026-11-02', normalHours: '1:30', overtimeHours: '30', nightHours: '1.5' }];
+  await store.saveMonth(draft);
+  const saved = JSON.parse(months.get('2026-11')!);
+  expect(saved.entries[0]).toEqual({ date: '2026-11-02', normalHours: '1.5', overtimeHours: '0.5', nightHours: '1.5' });
+});
+it('persists annual leave per year and clears it with all salary data', async () => {
+  const store = storage();
+  const leave = blankLeave(2026); leave.policy = 'yes'; leave.entitlementDays = '15'; leave.dates = ['2026-11-07'];
+  await store.saveMonth(emptyMonth('2026-11'), leave);
+  expect(await store.loadLeave(2026)).toEqual(leave);
+  expect(await store.loadLeave(2027)).toBeNull();
+  await store.deleteAll();
+  expect(await store.loadLeave(2026)).toBeNull();
+});
+it('rejects invalid leave before writing month or leave data', async () => {
+  const store = storage();
+  const leave = blankLeave(2026); leave.policy = 'yes'; leave.entitlementDays = '400';
+  await expect(store.saveMonth(emptyMonth('2026-11'), leave)).rejects.toThrow('INVALID_INPUT');
+  expect(months.size).toBe(0);
+  await expect(store.saveLeave(leave)).rejects.toThrow('INVALID_INPUT');
 });
