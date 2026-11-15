@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Regenerate the launcher, adaptive and splash artwork.
+"""Regenerate the legacy won-mark adaptive and splash artwork.
+
+The current launcher and Play Store icons are supplied brand artwork in
+assets/icon.png and assets/play-store-icon.png; never overwrite them here.
 
 The mark is the same won glyph as assets/brand.svg, rasterised here with the
 standard library so the files can be reproduced without extra tooling:
@@ -7,7 +10,6 @@ standard library so the files can be reproduced without extra tooling:
     python3 tools/generate-icons.py
 
 Outputs:
-  icon.png                      opaque full-bleed iOS/Android icon
   android-icon-foreground.png   transparent adaptive foreground (inside the safe zone)
   android-icon-monochrome.png   transparent single-colour layer for Android 13+ themed icons
   splash-icon.png               transparent rounded brand tile used by the native splash and LaunchScreen
@@ -114,7 +116,6 @@ def write_png(path, rows, size=SIZE):
 
 def main():
     out = Path(__file__).resolve().parent.parent / 'assets'
-    write_png(out / 'icon.png', render(background=BRAND, rounded=False, mark=MARK, mark_scale=1.0))
     # Keep the mark inside the 66dp safe zone of the 108dp adaptive canvas.
     write_png(out / 'android-icon-foreground.png', render(background=None, rounded=False, mark=MARK, mark_scale=0.62))
     write_png(out / 'android-icon-monochrome.png', render(background=None, rounded=False, mark=WHITE, mark_scale=0.62))

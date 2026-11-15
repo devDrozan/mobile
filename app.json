@@ -3,7 +3,7 @@
     "name": "E9 Mate Myanmar",
     "slug": "e9-severance-calculator",
     "scheme": "e9severance",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -11,14 +11,10 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#123c35",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
       "predictiveBackGestureEnabled": false,
       "package": "com.e9mate.myanmar",
-      "allowBackup": false
+      "allowBackup": false,
+      "icon": "./assets/icon.png"
     },
     "plugins": [
       "expo-router",
@@ -37,18 +33,18 @@
         }
       ],
       [
-  "expo-sqlite",
-  {
-    "useSQLCipher": true
-  }
-],
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
       [
-  "react-native-google-mobile-ads",
-  {
-    "androidAppId": "ca-app-pub-7752680457121386~8251446871",
-    "iosAppId": "ca-app-pub-3940256099942544~1458002511"
-  }
-]
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-7752680457121386~8251446871",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

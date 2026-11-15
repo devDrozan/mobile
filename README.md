@@ -111,3 +111,7 @@ Failed requests retain inputs and support retry; edits hide stale results and la
 ### Mobile calendar and storage notice
 
 Calendars initially select today in Korea without opening a form. Deliberate session selections and drafts are retained. One app-wide local-storage acknowledgment is remembered on this device, including earlier module acknowledgments. Successful expense Save confirms it automatically; deleting records does not reset it. Calculation requests still submit required inputs to the API. This acknowledgment does not grant advertising consent. Feature screens reserve space for Google test banner ads above the footer; Home retains its existing banner. Live ad units and production consent setup are not enabled by this change.
+
+### Closed-test icon artwork (0.1.2)
+
+`assets/icon.png` and `assets/play-store-icon.png` use the owner-supplied E-9 Mate Myanmar artwork (512 × 512 PNG), without redrawing it. The former is the application/Android launcher source; the latter is the Google Play listing upload. Android uses the complete legacy icon with the platform's uncropped wrapping behavior rather than the old won-mark adaptive/monochrome layers. Existing splash artwork stays separate. The legacy `tools/generate-icons.py` preserves both current icons. Production EAS builds create an AAB and increment the remote Android version code; upload and rollout remain separate actions.
