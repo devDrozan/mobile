@@ -3,7 +3,7 @@
     "name": "E9 Mate Myanmar",
     "slug": "e9-severance-calculator",
     "scheme": "e9severance",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

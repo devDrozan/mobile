@@ -25,12 +25,57 @@ export type ApiFailureKind = 'offline' | 'unavailable' | 'invalid' | 'server';
 export class ApiFailure extends Error {
   constructor(public issues: { field: string; code: string }[] = [], public kind: ApiFailureKind = issues.length ? 'invalid' : 'unavailable') { super('API_REQUEST_FAILED'); }
 }
+// Free test hosts can need a minute to wake. Only public health GETs retry;
+// financial inputs are submitted once, after this check succeeds.
+let healthyUntil = 0;
+let wakePending: Promise<void> | undefined;
+async function waitForApiWake(): Promise<void> {
+  if (process.env.EXPO_PUBLIC_API_WARMUP !== 'true' || Date.now() < healthyUntil) return;
+  if (wakePending) return wakePending;
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => { controller.abort(); reject(new ApiFailure([], 'offline')); }, 90000);
+  });
+  const attempt = async () => {
+    while (!controller.signal.aborted) {
+      let response: Response;
+      try {
+        response = await fetch(`${baseUrl.replace(/\/$/, '')}/health`, {
+          signal: controller.signal, cache: 'no-store', credentials: 'omit', redirect: 'error',
+        });
+      } catch { throw new ApiFailure([], 'offline'); }
+      if (controller.signal.aborted) throw new ApiFailure([], 'offline');
+      if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
+        let health: { status?: string; service?: string };
+        try { health = await response.json(); } catch { throw new ApiFailure([], 'unavailable'); }
+        if (controller.signal.aborted) throw new ApiFailure([], 'offline');
+        if (health?.status !== 'ok' || health?.service !== 'e9-severance-api') throw new ApiFailure([], 'unavailable');
+        healthyUntil = Date.now() + 600000;
+        return;
+      }
+      // The platform can serve a loading HTML page or temporary gateway error.
+      if (![502, 503, 504].includes(response.status) && !(response.ok && response.headers.get('content-type')?.includes('text/html'))) {
+        throw new ApiFailure([], 'unavailable');
+      }
+      await new Promise<void>(resolve => setTimeout(resolve, 2000));
+    }
+    throw new ApiFailure([], 'offline');
+  };
+  wakePending = Promise.race([attempt(), deadline]).finally(() => {
+    if (timeout !== undefined) clearTimeout(timeout);
+    wakePending = undefined;
+  });
+  return wakePending;
+}
+
 // Include reading/parsing the response in the deadline. A fetch promise can
 // resolve at headers while its response body is still waiting on the network.
 export async function withApiDeadline<T>(operation: (signal: AbortSignal) => Promise<T>): Promise<T> {
   // Validate before openapi-fetch constructs a Request, so a missing/malformed
   // origin is consistently reported as configuration rather than a server fault.
   if (!hasUsableApiUrl(baseUrl)) throw new ApiFailure([], 'unavailable');
+  await waitForApiWake();
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const deadline = new Promise<never>((_resolve, reject) => {
@@ -41,6 +86,7 @@ export async function withApiDeadline<T>(operation: (signal: AbortSignal) => Pro
   });
   try { return await Promise.race([operation(controller.signal), deadline]); }
   catch (error) {
+    healthyUntil = 0;
     if (error instanceof ApiFailure) throw error;
     throw new ApiFailure([], 'server');
   } finally { if (timer !== undefined) clearTimeout(timer); }
