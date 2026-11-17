@@ -32,7 +32,7 @@ export default function SearchScreen() {
     {results.length === 0 ? <View style={styles.empty}><Copy accessibilityLiveRegion="polite" style={styles.emptyTitle}>{t('hub.noResults')}</Copy><Copy nativeMyanmarLineMetrics style={styles.hint}>{t('hub.noResultsHint')}</Copy></View> : results.map(module => {
       const available = module.status === 'available';
       const title = t(module.titleKey);
-      return <Pressable key={module.id} accessibilityRole="button" accessibilityLabel={t(available ? 'hub.openNamed' : 'hub.comingSoonNamed', { name: title }) + '. ' + t(available ? 'hub.available' : 'hub.comingSoon')} onPress={() => openModule(module)} style={({ pressed }) => [styles.result, pressed && { opacity: .65 }]}>
+      return <Pressable key={module.id} accessibilityRole="button" accessibilityLabel={t(available ? 'hub.openNamed' : 'hub.comingSoonNamed', { name: title }) + '. ' + t(available ? 'hub.available' : 'hub.comingSoon')} onPress={() => openModule(module)} style={({ pressed }) => [styles.result, pressed && { transform: [{ scale: .98 }] }]}>
         <View style={styles.symbol}><ModuleSymbol id={module.id} color={colors.primary} size={22} /></View>
         <View style={styles.resultText}><Copy nativeMyanmarLineMetrics style={styles.resultTitle}>{title}</Copy><Copy nativeMyanmarLineMetrics style={styles.status}>{t(available ? 'hub.available' : 'hub.comingSoon')}</Copy></View>
         <Copy style={styles.arrow}>›</Copy>

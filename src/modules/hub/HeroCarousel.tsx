@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
+import { contrast } from '../../remote-theme';
+import { useRemoteConfig } from '../../remote-config';
+import { localizedConfigText, type RemoteConfig } from '../../remote-config-model';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { AccessibilityInfo, AppState, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,14 +15,15 @@ type Slide = {
   bodyKey: string;
   actionKey: string;
   route: '/severance' | '/severance/guide' | '/insurance';
-  color: string;
+  color?: string;
+  content?: RemoteConfig['carousel'][number];
   art: 'calculator' | 'coins' | 'insurance';
 };
-const slides: readonly Slide[] = [
-  { id: 'severance-info', labelKey: 'hub.usefulInfo', titleKey: 'hub.hero.severanceInfoTitle', bodyKey: 'hub.hero.severanceInfoBody', actionKey: 'hub.learnMore', route: '/severance/guide', color: '#113c29', art: 'calculator' },
-  { id: 'severance-ad', labelKey: 'hub.sampleAd', titleKey: 'hub.hero.severanceAdTitle', bodyKey: 'hub.hero.severanceAdBody', actionKey: 'hub.openTool', route: '/severance', color: '#263e28', art: 'coins' },
-  { id: 'insurance-info', labelKey: 'hub.usefulInfo', titleKey: 'hub.hero.insuranceInfoTitle', bodyKey: 'hub.hero.insuranceInfoBody', actionKey: 'hub.learnMore', route: '/insurance', color: '#15394a', art: 'insurance' },
-  { id: 'insurance-ad', labelKey: 'hub.sampleAd', titleKey: 'hub.hero.insuranceAdTitle', bodyKey: 'hub.hero.insuranceAdBody', actionKey: 'hub.openTool', route: '/insurance', color: '#2f3448', art: 'insurance' },
+const bundledSlides: readonly Slide[] = [
+  { id: 'severance-info', labelKey: 'hub.usefulInfo', titleKey: 'hub.hero.severanceInfoTitle', bodyKey: 'hub.hero.severanceInfoBody', actionKey: 'hub.learnMore', route: '/severance/guide', art: 'calculator' },
+  { id: 'severance-ad', labelKey: 'hub.sampleAd', titleKey: 'hub.hero.severanceAdTitle', bodyKey: 'hub.hero.severanceAdBody', actionKey: 'hub.openTool', route: '/severance', art: 'coins' },
+  { id: 'insurance-info', labelKey: 'hub.usefulInfo', titleKey: 'hub.hero.insuranceInfoTitle', bodyKey: 'hub.hero.insuranceInfoBody', actionKey: 'hub.learnMore', route: '/insurance', art: 'insurance' },
+  { id: 'insurance-ad', labelKey: 'hub.sampleAd', titleKey: 'hub.hero.insuranceAdTitle', bodyKey: 'hub.hero.insuranceAdBody', actionKey: 'hub.openTool', route: '/insurance', art: 'insurance' },
 ];
 
 type CarouselController = {
@@ -29,11 +33,14 @@ type CarouselController = {
   beginDrag: (offset: number) => void; endDrag: (offset: number) => void;
   momentumStart: () => void; momentumEnd: (offset: number) => void; scroll: (offset: number) => void;
 };
-const loopingSlides = [slides[slides.length - 1], ...slides, slides[0]];
 
 export function HeroCarousel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const config = useRemoteConfig();
   const { colors } = useUi();
+  const slides: readonly Slide[] = useMemo(() => config.carousel.length ? config.carousel.map(content => ({ ...content, color: contrast(content.color, colors.brandText) >= 4.5 ? content.color : colors.brandBackground, content, labelKey: '', titleKey: '', bodyKey: '', actionKey: '' })) : bundledSlides, [config.carousel, colors.brandText, colors.brandBackground]);
+  const loopingSlides = [slides[slides.length - 1], ...slides, slides[0]];
+  const copy = (slide: Slide, field: 'label' | 'title' | 'body' | 'action') => slide.content ? localizedConfigText(slide.content[field], i18n.language) : t(slide[`${field}Key`]);
   const { width, fontScale } = useWindowDimensions();
   const styles = createStyles(colors);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -49,6 +56,8 @@ export function HeroCarousel() {
   const interval = cardWidth + 12;
   const showArtwork = width >= 380 && fontScale < 1.2;
   useEffect(() => {
+    logical.current = Math.min(logical.current, slides.length - 1);
+    setSelected(logical.current);
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let settleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -67,8 +76,8 @@ export function HeroCarousel() {
     };
     function arm() {
       clearTimer();
-      if (!active || !focused.current || !appActive.current || touching || dragging) return;
-      timer = setTimeout(() => { timer = undefined; move(1, true); }, 4000);
+      if (!active || !focused.current || !appActive.current || touching || dragging || !config.features.carouselAutoplay) return;
+      timer = setTimeout(() => { timer = undefined; move(1, true); }, config.features.carouselIntervalMs);
     }
     function finish(value: number) {
       if (!active || touching || dragging || !moving) return;
@@ -145,7 +154,7 @@ export function HeroCarousel() {
       active = false; clearTimer(); clearSettle(); detach();
       if (controller.current === actions) controller.current = null;
     };
-  }, [interval]);
+  }, [interval, slides, config.features.carouselAutoplay, config.features.carouselIntervalMs]);
   useFocusEffect(useCallback(() => {
     focused.current = true; controller.current?.resume();
     return () => { focused.current = false; controller.current?.pause(); };
@@ -162,56 +171,58 @@ export function HeroCarousel() {
           <View style={styles.glow} />
           {showArtwork && <HeroArtwork kind={slide.art} />}
           <View style={[styles.copyArea, showArtwork && styles.copyAreaWithArt]}>
-            <Copy nativeMyanmarLineMetrics style={styles.label}>{t(slide.labelKey)}</Copy>
-            <Copy nativeMyanmarLineMetrics style={styles.title}>{t(slide.titleKey)}</Copy>
-            <Copy nativeMyanmarLineMetrics style={styles.body}>{t(slide.bodyKey)}</Copy>
-            <View style={styles.action}><Copy nativeMyanmarLineMetrics style={styles.actionText}>{t(slide.actionKey)}  →</Copy></View>
+            <Copy nativeMyanmarLineMetrics style={styles.label}>{copy(slide, 'label')}</Copy>
+            <Copy nativeMyanmarLineMetrics style={styles.title}>{copy(slide, 'title')}</Copy>
+            <Copy nativeMyanmarLineMetrics style={styles.body}>{copy(slide, 'body')}</Copy>
+            <View style={styles.action}><Copy nativeMyanmarLineMetrics style={styles.actionText}>{copy(slide, 'action')}  →</Copy></View>
           </View>
         </>;
         return clone
-          ? <View key={`clone-${physicalIndex}`} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={[styles.card, { width: cardWidth, backgroundColor: slide.color }]}>{content}</View>
-          : <Pressable key={slide.id} accessibilityRole="button" accessibilityLabel={t(slide.labelKey) + '. ' + t(slide.titleKey) + '. ' + t('hub.position', { current: index + 1, total: slides.length })} onPress={() => router.navigate(slide.route)} style={({ pressed }) => [styles.card, { width: cardWidth, backgroundColor: slide.color }, pressed && { opacity: .78 }]}>{content}</Pressable>;
+          ? <View key={`clone-${physicalIndex}`} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={[styles.card, { width: cardWidth, backgroundColor: slide.color ?? colors.brandBackground }]}>{content}</View>
+          : <Pressable key={slide.id} accessibilityRole="button" accessibilityLabel={copy(slide, 'label') + '. ' + copy(slide, 'title') + '. ' + t('hub.position', { current: index + 1, total: slides.length })} onPress={() => router.navigate(slide.route)} style={({ pressed }) => [styles.card, { width: cardWidth, backgroundColor: slide.color ?? colors.brandBackground }, pressed && { transform: [{ scale: .98 }] }]}>{content}</Pressable>;
       })}
     </ScrollView>
     <View style={styles.controls}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('hub.previousSlide')} onPress={() => controller.current?.move(-1)} style={({ pressed }) => [styles.controlButton, pressed && { opacity: .45 }]}><Copy style={styles.controlText}>‹</Copy></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('hub.previousSlide')} onPress={() => controller.current?.move(-1)} style={({ pressed }) => [styles.controlButton, pressed && { transform: [{ scale: .98 }] }]}><Copy style={styles.controlText}>‹</Copy></Pressable>
       <View style={styles.dots} accessible accessibilityLabel={t('hub.position', { current: selected + 1, total: slides.length })} accessibilityLiveRegion="polite">{slides.map((slide, index) => <View key={slide.id} style={[styles.dot, selected === index && styles.selectedDot]} />)}</View>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('hub.nextSlide')} onPress={() => controller.current?.move(1)} style={({ pressed }) => [styles.controlButton, pressed && { opacity: .45 }]}><Copy style={styles.controlText}>›</Copy></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('hub.nextSlide')} onPress={() => controller.current?.move(1)} style={({ pressed }) => [styles.controlButton, pressed && { transform: [{ scale: .98 }] }]}><Copy style={styles.controlText}>›</Copy></Pressable>
     </View>
   </View>;
 }
 
 function HeroArtwork({ kind }: { kind: Slide['art'] }) {
+  const { colors } = useUi();
+  const art = createArt(colors);
   if (kind === 'calculator') return <View accessible={false} style={art.wrap}><View style={art.paper} /><View style={art.calculator}><View style={art.display}><Copy style={art.displayText}>₩</Copy></View><View style={art.keys}>{Array.from({ length: 9 }, (_, index) => <View key={index} style={art.key} />)}</View></View></View>;
   if (kind === 'coins') return <View accessible={false} style={art.wrap}><View style={art.coinBack}><Copy style={art.coinText}>₩</Copy></View><View style={art.coinFront}><Copy style={art.coinText}>₩</Copy></View></View>;
   return <View accessible={false} style={art.wrap}><View style={art.shield}><Copy style={art.shieldText}>✚</Copy></View></View>;
 }
-const art = StyleSheet.create({
+function createArt(colors: ThemeColors) { return StyleSheet.create({
   wrap: { position: 'absolute', right: 10, bottom: 24, width: 108, height: 132, alignItems: 'center', justifyContent: 'center', opacity: .85 },
-  paper: { position: 'absolute', right: 4, top: 0, width: 69, height: 88, borderRadius: 9, backgroundColor: '#acc9a2', transform: [{ rotate: '-12deg' }] },
-  calculator: { position: 'absolute', right: 3, bottom: 0, width: 86, height: 109, borderRadius: 15, borderWidth: 2, borderColor: '#658b6c', backgroundColor: '#183f31', padding: 8, transform: [{ rotate: '9deg' }] },
-  display: { height: 29, borderRadius: 5, backgroundColor: '#071e18', alignItems: 'center', justifyContent: 'center' },
-  displayText: { color: '#d5eeac', fontSize: 19, lineHeight: 26 },
+  paper: { position: 'absolute', right: 4, top: 0, width: 69, height: 88, borderRadius: 9, backgroundColor: colors.accent, transform: [{ rotate: '-12deg' }] },
+  calculator: { position: 'absolute', right: 3, bottom: 0, width: 86, height: 109, borderRadius: 15, borderWidth: 2, borderColor: colors.brandText, backgroundColor: colors.brandBackground, padding: 8, transform: [{ rotate: '9deg' }] },
+  display: { height: 29, borderRadius: 5, backgroundColor: colors.onAccent, alignItems: 'center', justifyContent: 'center' },
+  displayText: { color: colors.accent, fontSize: 19, lineHeight: 26 },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 8 },
-  key: { width: 17, height: 14, borderRadius: 4, backgroundColor: '#82ad82' },
-  coinBack: { position: 'absolute', top: 12, right: 4, width: 76, height: 76, borderRadius: 38, borderWidth: 5, borderColor: '#bad383', backgroundColor: '#718f48', alignItems: 'center', justifyContent: 'center' },
-  coinFront: { position: 'absolute', bottom: 4, left: 2, width: 80, height: 80, borderRadius: 40, borderWidth: 5, borderColor: '#d6e7a3', backgroundColor: '#91ad64', alignItems: 'center', justifyContent: 'center' },
-  coinText: { color: '#23402b', fontSize: 32, lineHeight: 43, fontFamily: 'NotoSansMyanmar_600SemiBold' },
-  shield: { width: 88, height: 104, borderWidth: 5, borderColor: '#a4c8d3', backgroundColor: '#347184', borderTopLeftRadius: 39, borderTopRightRadius: 39, borderBottomLeftRadius: 25, borderBottomRightRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  shieldText: { color: '#e2f6ef', fontSize: 47, lineHeight: 63, fontFamily: 'NotoSansMyanmar_600SemiBold' },
-});
+  key: { width: 17, height: 14, borderRadius: 4, backgroundColor: colors.brandText },
+  coinBack: { position: 'absolute', top: 12, right: 4, width: 76, height: 76, borderRadius: 38, borderWidth: 5, borderColor: colors.accent, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  coinFront: { position: 'absolute', bottom: 4, left: 2, width: 80, height: 80, borderRadius: 40, borderWidth: 5, borderColor: colors.accent, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  coinText: { color: colors.onAccent, fontSize: 32, lineHeight: 43, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  shield: { width: 88, height: 104, borderWidth: 5, borderColor: colors.accent, backgroundColor: colors.brandBackground, borderTopLeftRadius: 39, borderTopRightRadius: 39, borderBottomLeftRadius: 25, borderBottomRightRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  shieldText: { color: colors.brandText, fontSize: 47, lineHeight: 63, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+}); }
 
 function createStyles(colors: ThemeColors) { return StyleSheet.create({
   section: { gap: 3 },
-  card: { minHeight: 225, borderRadius: 22, borderWidth: 1, borderColor: '#5c805f', padding: 18, overflow: 'hidden', justifyContent: 'center' },
-  glow: { position: 'absolute', width: 180, height: 180, right: -45, top: -100, borderRadius: 90, backgroundColor: 'rgba(177,229,137,0.14)' },
+  card: { minHeight: 225, borderRadius: 22, borderWidth: 1, borderColor: colors.brandBackground, padding: 18, overflow: 'hidden', justifyContent: 'center' },
+  glow: { position: 'absolute', width: 180, height: 180, right: -45, top: -100, borderRadius: 90, backgroundColor: colors.accent, opacity: .12 },
   copyArea: { gap: 8, alignItems: 'flex-start' },
   copyAreaWithArt: { width: '72%' },
-  label: { color: '#193628', backgroundColor: '#d1eaa7', fontSize: 10, lineHeight: 22, paddingHorizontal: 11, borderRadius: 12, overflow: 'hidden', fontFamily: 'NotoSansMyanmar_600SemiBold' },
-  title: { color: '#f4f8ed', fontSize: 22, lineHeight: 36, fontFamily: 'NotoSansMyanmar_600SemiBold' },
-  body: { color: '#d5e5d4', fontSize: 12, lineHeight: 24 },
-  action: { minHeight: 40, paddingHorizontal: 14, borderRadius: 21, borderWidth: 1, borderColor: '#9cc993', backgroundColor: '#2b5637', justifyContent: 'center', marginTop: 3 },
-  actionText: { color: '#f3f9ed', fontSize: 12, lineHeight: 25, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  label: { color: colors.onAccent, backgroundColor: colors.accent, fontSize: 10, lineHeight: 22, paddingHorizontal: 11, borderRadius: 12, overflow: 'hidden', fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  title: { color: colors.brandText, fontSize: 22, lineHeight: 36, fontFamily: 'NotoSansMyanmar_600SemiBold' },
+  body: { color: colors.brandText, fontSize: 12, lineHeight: 24 },
+  action: { minHeight: 40, paddingHorizontal: 14, borderRadius: 21, borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.accent, justifyContent: 'center', marginTop: 3 },
+  actionText: { color: colors.onAccent, fontSize: 12, lineHeight: 25, fontFamily: 'NotoSansMyanmar_600SemiBold' },
   controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 },
   controlButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   controlText: { color: colors.primary, fontSize: 26, lineHeight: 34 },

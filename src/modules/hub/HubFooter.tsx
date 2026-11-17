@@ -18,7 +18,7 @@ export function HubFooter() {
   if (!tabs.some(tab => tab.path === path)) return null;
   return <View style={styles.footer}><View accessibilityRole="tablist" style={styles.tabs}>{tabs.map(tab => {
     const selected = tab.path === path;
-    return <Pressable key={tab.path} accessibilityRole="tab" accessibilityLabel={t(tab.labelKey)} accessibilityState={{ selected }} onPress={() => { if (!selected) router.navigate(tab.path); }} style={({ pressed }) => [styles.tab, pressed && { opacity: .65 }]}>
+    return <Pressable key={tab.path} accessibilityRole="tab" accessibilityLabel={t(tab.labelKey)} accessibilityState={{ selected }} onPress={() => { if (!selected) router.navigate(tab.path); }} style={({ pressed }) => [styles.tab, pressed && { transform: [{ scale: .98 }] }]}>
       <HubIcon name={tab.icon} color={selected ? colors.primary : colors.muted} />
       <Copy nativeMyanmarLineMetrics style={[styles.label, selected && styles.selectedLabel]}>{t(tab.labelKey)}</Copy>
       {selected && <View style={styles.selectedDot} />}
@@ -41,5 +41,5 @@ function createStyles(colors: ThemeColors) { return StyleSheet.create({
   tab: { flex: 1, minHeight: 62, alignItems: 'center', justifyContent: 'center', gap: 1 },
   label: { color: colors.muted, fontSize: 11, lineHeight: 21 },
   selectedLabel: { color: colors.primary, fontFamily: 'NotoSansMyanmar_600SemiBold' },
-  selectedDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary, position: 'absolute', bottom: 2 },
+  selectedDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.accent, position: 'absolute', bottom: 2 },
 }); }

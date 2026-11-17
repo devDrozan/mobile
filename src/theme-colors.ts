@@ -1,32 +1,66 @@
-export type ThemeColors = {
-  background: string; surface: string; surfaceSubtle: string;
-  text: string; muted: string; border: string; divider: string;
-  primary: string; onPrimary: string; accent: string; onAccent: string; brandBackground: string; brandText: string;
-  secondary: string; secondaryBorder: string; selected: string; selectedBorder: string;
-  link: string; placeholder: string;
-  error: string; errorBackground: string; errorBorder: string;
-  resultBackground: string; resultText: string; resultMuted: string; resultWarning: string;
-  switchOn: string; switchOff: string;
-};
+// 60% blue-white/navy surfaces, 30% brand blue, 10% yellow emphasis.
+// Semantic error reds remain separate; ratios describe visual emphasis.
+export const themeColorKeys = ["background", "surface", "surfaceSubtle", "text", "muted", "border", "divider", "primary", "onPrimary", "accent", "onAccent", "brandBackground", "brandText", "secondary", "secondaryBorder", "selected", "selectedBorder", "link", "placeholder", "error", "errorBackground", "errorBorder", "resultBackground", "resultText", "resultMuted", "resultWarning", "switchOn", "switchOff"] as const;
+export type ThemeColors = Record<typeof themeColorKeys[number], string>;
 
 export const lightColors: ThemeColors = {
-  background: '#f7f8f4', surface: '#ffffff', surfaceSubtle: '#eff4e6',
-  text: '#243b35', muted: '#62735c', border: '#dfe7d7', divider: '#e9eee2',
-  primary: '#123c35', onPrimary: '#ffffff', accent: '#1d4ed8', onAccent: '#ffffff', brandBackground: '#123c35', brandText: '#d5eab5',
-  secondary: '#edf3e5', secondaryBorder: '#dce6d0', selected: '#eff5e7', selectedBorder: '#6f8b5d',
-  link: '#506a40', placeholder: '#68785f',
-  error: '#8f432f', errorBackground: '#fcf2ec', errorBorder: '#ddbcae',
-  resultBackground: '#123c35', resultText: '#eef4db', resultMuted: '#bed2ac', resultWarning: '#e1d5a3',
-  switchOn: '#678f5c', switchOff: '#7f8b79',
+  "background": "#F4F8FF",
+  "surface": "#FFFFFF",
+  "surfaceSubtle": "#EAF2FF",
+  "text": "#102445",
+  "muted": "#4E627F",
+  "border": "#7187A6",
+  "divider": "#DCE6F5",
+  "primary": "#1264D8",
+  "onPrimary": "#FFFFFF",
+  "accent": "#FFCA28",
+  "onAccent": "#102445",
+  "brandBackground": "#1264D8",
+  "brandText": "#FFFFFF",
+  "secondary": "#EAF2FF",
+  "secondaryBorder": "#7187A6",
+  "selected": "#DFEBFF",
+  "selectedBorder": "#1264D8",
+  "link": "#1257B4",
+  "placeholder": "#4E627F",
+  "error": "#AF2432",
+  "errorBackground": "#FFF0F1",
+  "errorBorder": "#BF5260",
+  "resultBackground": "#1264D8",
+  "resultText": "#FFFFFF",
+  "resultMuted": "#FFFFFF",
+  "resultWarning": "#FFFFFF",
+  "switchOn": "#1264D8",
+  "switchOff": "#667B99"
 };
 
 export const darkColors: ThemeColors = {
-  background: '#101a16', surface: '#1a2721', surfaceSubtle: '#24362a',
-  text: '#e7ede3', muted: '#afbea7', border: '#415346', divider: '#35483b',
-  primary: '#bfdba5', onPrimary: '#14261d', accent: '#60a5fa', onAccent: '#102033', brandBackground: '#263e32', brandText: '#d5eab5',
-  secondary: '#293d2e', secondaryBorder: '#4d6650', selected: '#2d4634', selectedBorder: '#a8ce92',
-  link: '#bedba6', placeholder: '#a2b198',
-  error: '#ffb69e', errorBackground: '#3c2923', errorBorder: '#986653',
-  resultBackground: '#173b32', resultText: '#eef4db', resultMuted: '#c5d8b6', resultWarning: '#f0dfa4',
-  switchOn: '#96ba7e', switchOff: '#7b8b80',
+  "background": "#0B1425",
+  "surface": "#13233B",
+  "surfaceSubtle": "#192D4B",
+  "text": "#F4F8FF",
+  "muted": "#B5C6DF",
+  "border": "#627D9F",
+  "divider": "#2B4260",
+  "primary": "#8DBBFF",
+  "onPrimary": "#0B1425",
+  "accent": "#FFCA28",
+  "onAccent": "#102445",
+  "brandBackground": "#153F79",
+  "brandText": "#F4F8FF",
+  "secondary": "#192D4B",
+  "secondaryBorder": "#627D9F",
+  "selected": "#203C63",
+  "selectedBorder": "#8DBBFF",
+  "link": "#A7CCFF",
+  "placeholder": "#B5C6DF",
+  "error": "#FFB4BD",
+  "errorBackground": "#3E202D",
+  "errorBorder": "#C87888",
+  "resultBackground": "#153F79",
+  "resultText": "#F4F8FF",
+  "resultMuted": "#DFEBFF",
+  "resultWarning": "#FFE18A",
+  "switchOn": "#8DBBFF",
+  "switchOff": "#7388A5"
 };

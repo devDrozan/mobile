@@ -116,3 +116,27 @@ it('exposes only four logical cards and two sample-ad labels, with noninteractiv
   const label = i18n.t('hub.usefulInfo') + '. ' + i18n.t('hub.hero.severanceInfoTitle') + '. ' + i18n.t('hub.position', { current: 1, total: 4 });
   await fireEvent.press(screen.getByLabelText(label)); expect(router.navigate).toHaveBeenCalledWith('/severance/guide');
 });
+
+it('renders refreshed bilingual content, clamps a smaller carousel, and honors autoplay settings', async () => {
+  const remote = require('../src/remote-config') as typeof import('../src/remote-config');
+  const defaults = require('../src/remote-config-model').defaultRemoteConfig;
+  const config = structuredClone(defaults);
+  const spy = jest.spyOn(remote, 'useRemoteConfig').mockImplementation(() => config);
+  await ready();
+  await fireEvent.press(screen.getByLabelText(i18n.t('hub.previousSlide')));
+  await settle(0);
+  const content = {
+    id: 'fresh', label: { en: 'Information', my: 'အချက်အလက်' },
+    title: { en: 'Fresh title', my: 'ခေါင်းစဉ်အသစ်' }, body: { en: 'Updated content', my: 'အသစ်' },
+    action: { en: 'Open', my: 'ဖွင့်ရန်' }, route: '/insurance' as const, art: 'insurance' as const, color: '#113c29',
+  };
+  config.carousel = [content]; config.features.carouselAutoplay = false;
+  await screen.rerender(<HeroCarousel />);
+  expect(screen.getByRole('button', { name: /Fresh title/ })).toBeTruthy();
+  scrollTo().mockClear(); await tick(30000); expect(scrollTo()).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByRole('button', { name: /Fresh title/ }));
+  expect(router.navigate).toHaveBeenCalledWith('/insurance');
+  await act(() => i18n.changeLanguage('my'));
+  expect(screen.getByRole('button', { name: /ခေါင်းစဉ်အသစ်/ })).toBeTruthy();
+  spy.mockRestore();
+});

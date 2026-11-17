@@ -174,7 +174,7 @@ export default function ExpensesScreen() {
     {!editorOpen && <LocalDataNotice notice={notice} onSave />}
   </Screen></View>
     <Modal visible={editorOpen} transparent animationType="none" onRequestClose={() => { if (!busy) setEditorOpen(false); }} onShow={() => revealForm('description')}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 32, backgroundColor: '#091a15aa' }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 32, backgroundColor: `${colors.onAccent}AA` }}>
         <View accessibilityViewIsModal style={{ width: '100%', maxWidth: 520, maxHeight: '100%', alignSelf: 'center', borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20 }}>
             {editorOpen && <>

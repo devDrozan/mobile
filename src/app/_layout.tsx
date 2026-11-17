@@ -1,3 +1,4 @@
+import { RemoteConfigProvider } from '../remote-config';
 import { LocalDataNoticeProvider } from '../local-data-notice';
 import { FeatureBannerAd } from '../components/FeatureBannerAd';
 import { useEffect, useState } from 'react';
@@ -21,7 +22,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => { /* Unsupported previews c
 export const unstable_settings = { anchor: 'index' };
 
 export default function RootLayout() {
-  return <AppThemeProvider><SafeAreaProvider><ThemedLayout /></SafeAreaProvider></AppThemeProvider>;
+  return <RemoteConfigProvider><AppThemeProvider><SafeAreaProvider><ThemedLayout /></SafeAreaProvider></AppThemeProvider></RemoteConfigProvider>;
 }
 
 function ThemedLayout() {

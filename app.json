@@ -23,12 +23,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
+          "image": "./assets/icon.png",
           "imageWidth": 128,
           "resizeMode": "contain",
-          "backgroundColor": "#f7f8f4",
+          "backgroundColor": "#F4F8FF",
           "dark": {
-            "backgroundColor": "#101a16"
+            "backgroundColor": "#0B1425"
           }
         }
       ],
@@ -63,6 +63,15 @@
       "eas": {
         "projectId": "69189198-1f10-48e8-9ee6-9d32d2a8cb68"
       }
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/69189198-1f10-48e8-9ee6-9d32d2a8cb68",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }

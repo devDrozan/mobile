@@ -142,3 +142,20 @@ it.each(['en','my'])('opens the available converter from Services and search in 
   await fireEvent.press(screen.getByRole('button',{name:label}));
   expect(router.navigate).toHaveBeenLastCalledWith('/exchange');
 });
+
+it('shows bilingual remote notices and preserves the empty state when notices are disabled', async () => {
+  const remote = require('../src/remote-config') as typeof import('../src/remote-config');
+  const config = structuredClone(require('../src/remote-config-model').defaultRemoteConfig);
+  config.notices = [{ id: 'notice', title: { en: 'New notice', my: 'အသိပေးချက်အသစ်' }, body: { en: 'Public message', my: 'သတင်းစကား' } }];
+  const spy = jest.spyOn(remote, 'useRemoteConfig').mockReturnValue(config);
+  try {
+    await render(<AppThemeProvider><NoticesScreen /></AppThemeProvider>);
+    expect(screen.getByText('New notice')).toBeOnTheScreen();
+    await act(() => i18n.changeLanguage('my'));
+    expect(screen.getByText('အသိပေးချက်အသစ်')).toBeOnTheScreen();
+    config.features.noticesVisible = false;
+    await screen.rerender(<AppThemeProvider><NoticesScreen /></AppThemeProvider>);
+    expect(screen.getByText(i18n.t('hub.noticesEmpty'))).toBeOnTheScreen();
+    expect(screen.queryByText('အသိပေးချက်အသစ်')).toBeNull();
+  } finally { spy.mockRestore(); }
+});

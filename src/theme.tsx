@@ -1,3 +1,5 @@
+import { remoteTheme } from './remote-theme';
+import { useRemoteConfig } from './remote-config';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +19,7 @@ const ThemeContext = createContext<AppTheme>({ ready: false, mode: 'system', res
 const validMode = (value: string | null): value is ThemeMode => value === 'system' || value === 'light' || value === 'dark';
 
 export function AppThemeProvider({ children }: PropsWithChildren) {
+  const remoteConfig = useRemoteConfig();
   const systemScheme = useColorScheme();
   const [mode, setStoredMode] = useState<ThemeMode>('system');
   const [ready, setReady] = useState(false);
@@ -39,8 +42,8 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
 
   const resolvedTheme = mode === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : mode;
   const value = useMemo<AppTheme>(() => ({
-    ready, mode, resolvedTheme, colors: resolvedTheme === 'dark' ? darkColors : lightColors, setMode,
-  }), [ready, mode, resolvedTheme, setMode]);
+    ready, mode, resolvedTheme, colors: remoteTheme(resolvedTheme === 'dark' ? darkColors : lightColors, remoteConfig.theme[resolvedTheme]), setMode,
+  }), [ready, mode, resolvedTheme, setMode, remoteConfig.theme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

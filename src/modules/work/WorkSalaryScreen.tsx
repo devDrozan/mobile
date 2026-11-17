@@ -309,7 +309,7 @@ export default function WorkSalaryScreen() {
       {leave.policy === 'no' && <View style={styles.note}><Copy>{t('salary.leave.noNotice')}</Copy></View>}
       {leave.policy === 'unsure' && <View style={styles.note}><Copy>{t('salary.leave.unsureGuide')}</Copy></View>}
       {leave.policy !== null && <Button title={t('salary.leave.save')} busy={leaveSaving} disabled={!leaveLoaded || saving || !ready} onPress={() => { void saveLeaveSettings(); }} />}
-      {leaveError && leaveError !== 'daysError' && <Copy accessibilityRole="alert" style={styles.error}>{t(`salary.leave.${leaveError}`)}</Copy>}
+      {!!leaveError && leaveError !== 'daysError' && <Copy accessibilityRole="alert" style={styles.error}>{t(`salary.leave.${leaveError}`)}</Copy>}
       {leaveFeedback && (leaveFeedback.tone === 'error'
         ? <Copy accessibilityRole="alert" style={styles.error}>{t(`salary.leave.${leaveFeedback.code}`)}</Copy>
         : <Copy accessibilityLiveRegion="polite">{t(`salary.leave.${leaveFeedback.code}`)}</Copy>)}
@@ -361,7 +361,7 @@ export default function WorkSalaryScreen() {
     </View>
   </Screen></View>
     <Modal visible={!!dayDraft} transparent animationType="none" onShow={() => { if (dayEditing) inputs.current[`day.${Object.keys(dayErrors)[0] ?? 'normalHours'}`]?.focus(); }} onRequestClose={() => { if (!saving) setDayDraft(undefined); }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', backgroundColor: '#091a15aa', paddingHorizontal: 12, paddingVertical: 32 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', backgroundColor: `${colors.onAccent}AA`, paddingHorizontal: 12, paddingVertical: 32 }}>
         <View accessibilityViewIsModal style={{ width: '100%', maxWidth: 520, maxHeight: '100%', alignSelf: 'center', backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, gap: 14 }}>
             {dayDraft && <>
@@ -372,7 +372,7 @@ export default function WorkSalaryScreen() {
                 {markLeave ? <Copy style={styles.help}>{t('salary.leave.dayHelp')}</Copy> : hourKeys.map(key => { const code = dayErrors[key]; return <Field key={key} ref={node => { inputs.current[`day.${key}`] = node; }} id={`salary-day-${key}`} label={t(`salary.${key}`)} keyboardType="decimal-pad" maxLength={5} value={dayDraft[key]} error={code ? t(`salary.errors.${code}`, { defaultValue: t('salary.errors.INVALID_VALUE') }) : undefined} editable={!saving} onChangeText={value => { setDayDraft({ ...dayDraft, [key]: value }); setDayErrors({}); setDayMessage(''); }} />; })}
                 <Copy style={styles.help}>{t('salary.settingsSaveHelp')}</Copy>
                 <LocalDataNotice notice={notice} />
-                {dayMessage && <Copy accessibilityRole="alert" style={styles.error}>{t(`salary.${dayMessage}`)}</Copy>}
+                {!!dayMessage && <Copy accessibilityRole="alert" style={styles.error}>{t(`salary.${dayMessage}`)}</Copy>}
                 <Button title={t('salary.saveDay')} busy={saving} onPress={() => { void saveDay(); }} />
               </> : <>{markLeave && <Copy style={styles.help}>{t('salary.leave.recorded')}</Copy>}{hourKeys.map(key => <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}><Copy style={{ flex: 1 }}>{t(`salary.${key}`)}</Copy><Copy>{dayDraft[key]}</Copy></View>)}<Button title={t('salary.editDay')} onPress={() => { pendingFocus.current = 'day.normalHours'; setDayEditing(true); }} /></>}
               <Button title={t('salary.closeDay')} secondary disabled={saving} onPress={() => setDayDraft(undefined)} />

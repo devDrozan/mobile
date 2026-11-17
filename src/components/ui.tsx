@@ -52,7 +52,7 @@ export function Copy({ style, nativeMyanmarLineMetrics = false, fixedMetrics = f
 }
 export function Button({ title, onPress, secondary = false, busy = false, disabled = false }: { title: string; onPress: () => void; secondary?: boolean; busy?: boolean; disabled?: boolean }) {
   const { colors, styles } = useUi();
-  return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy, busy }} onPress={onPress} disabled={disabled || busy} style={({ pressed }) => [styles.button, secondary && styles.secondary, (pressed || disabled || busy) && { opacity: .55 }]}>{busy && <ActivityIndicator accessible={false} color={secondary ? colors.primary : colors.onPrimary} />}<Copy style={[styles.buttonText, secondary && { color: colors.primary }]}>{title}</Copy></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy, busy }} onPress={onPress} disabled={disabled || busy} style={({ pressed }) => [styles.button, secondary && styles.secondary, pressed && { transform: [{ scale: .98 }], borderColor: secondary ? colors.primary : colors.onPrimary }, disabled && { opacity: .7 }]}>{busy && <ActivityIndicator accessible={false} color={secondary ? colors.primary : colors.onPrimary} />}<Copy style={[styles.buttonText, secondary && { color: colors.primary }]}>{title}</Copy></Pressable>;
 }
 export function Field({ label, help, error, id, ref, ...props }: TextInputProps & { label: string; help?: string; error?: string; id?: string; ref?: Ref<ComponentRef<typeof TextInput>> }) {
   const { colors, styles } = useUi();
@@ -96,19 +96,19 @@ function HeaderContent({ path }: { path: string }) {
       <View style={styles.headerInner}>
         <View style={styles.brandRow}>
           <Copy fixedMetrics style={styles.brand}><Copy fixedMetrics style={styles.brandAccent}>E9</Copy> Mate</Copy>
-          <Pressable ref={menuTrigger} accessibilityRole="button" accessibilityLabel={t('hub.menu')} accessibilityState={{ expanded: menuOpen }} onPress={() => { restoreFocus.current = true; setMenuOpen(true); }} style={({ pressed }) => [styles.headerAction, pressed && { opacity: .65 }]}><MenuIcon name="menu" color={colors.primary} /></Pressable>
+          <Pressable ref={menuTrigger} accessibilityRole="button" accessibilityLabel={t('hub.menu')} accessibilityState={{ expanded: menuOpen }} onPress={() => { restoreFocus.current = true; setMenuOpen(true); }} style={({ pressed }) => [styles.headerAction, pressed && { transform: [{ scale: .98 }] }]}><MenuIcon name="menu" color={colors.onAccent} /></Pressable>
         </View>
-      {path !== '/' && <Pressable accessibilityRole="button" accessibilityLabel={t('hub.backHome')} onPress={() => router.navigate('/')} style={({ pressed }) => [styles.homeLink, pressed && { opacity: .65 }]}><Copy style={styles.homeLinkText}>‹  {t('hub.backHome')}</Copy></Pressable>}
+      {path !== '/' && <Pressable accessibilityRole="button" accessibilityLabel={t('hub.backHome')} onPress={() => router.navigate('/')} style={({ pressed }) => [styles.homeLink, pressed && { transform: [{ scale: .98 }] }]}><Copy style={styles.homeLinkText}>‹  {t('hub.backHome')}</Copy></Pressable>}
       {(path === '/severance' || path === '/severance/guide' || path === '/guide') && <View accessibilityRole="tablist" style={styles.moduleTabs}>{([{ path: '/severance' as const, label: 'calculator' }, { path: '/severance/guide' as const, label: 'guide' }]).map(tab => {
         const selected = path === tab.path || (path === '/guide' && tab.path === '/severance/guide');
-        return <Pressable key={tab.path} accessibilityRole="tab" accessibilityLabel={t(tab.label)} accessibilityState={{ selected }} onPress={() => { if (!selected) router.navigate(tab.path); }} style={({ pressed }) => [styles.moduleTab, selected && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { opacity: .65 }]}><Copy style={[styles.moduleTabText, selected && { color: colors.primary }]}>{t(tab.label)}</Copy></Pressable>;
+        return <Pressable key={tab.path} accessibilityRole="tab" accessibilityLabel={t(tab.label)} accessibilityState={{ selected }} onPress={() => { if (!selected) router.navigate(tab.path); }} style={({ pressed }) => [styles.moduleTab, selected && { backgroundColor: colors.selected, borderColor: colors.selectedBorder }, pressed && { transform: [{ scale: .98 }] }]}><Copy style={[styles.moduleTabText, selected && { color: colors.primary }]}>{t(tab.label)}</Copy></Pressable>;
       })}</View>}
 
       </View>
     </View>
     <Modal testID="header-menu-modal" visible={menuOpen} transparent animationType="none" onShow={() => { if (menuHeading.current) AccessibilityInfo.sendAccessibilityEvent(menuHeading.current, 'focus'); }} onRequestClose={closeMenu}>
       <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 40 }}>
-        <Pressable testID="header-menu-backdrop" accessibilityRole="button" accessibilityLabel={t('hub.dismissMenu')} onPress={closeMenu} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#091a15aa' }} />
+        <Pressable testID="header-menu-backdrop" accessibilityRole="button" accessibilityLabel={t('hub.dismissMenu')} onPress={closeMenu} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: `${colors.onAccent}AA` }} />
         <View accessibilityViewIsModal style={{ width: '100%', maxWidth: 420, maxHeight: '100%', alignSelf: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 22, backgroundColor: colors.surface }}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 18, gap: 12 }}>
             <Copy ref={menuHeading} accessible accessibilityRole="header" style={styles.smallHeading}>{t('hub.menu')}</Copy>
@@ -161,7 +161,7 @@ function createStyles(colors: ThemeColors) { return StyleSheet.create({
   brandAccent: { color: colors.primary, fontSize: 22, fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif', fontWeight: '700', lineHeight: 30 },
   popupAction: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerAction: { width: 44, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 22, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface },
+  headerAction: { width: 44, height: 44, borderWidth: 1, borderColor: colors.accent, borderRadius: 22, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent },
   headerActionAccent: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent },
   languagePanel: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
   languageOption: { flex: 1, minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
@@ -176,7 +176,7 @@ function createStyles(colors: ThemeColors) { return StyleSheet.create({
   title: { fontSize: 28, letterSpacing: -.5, fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif', fontWeight: '700', color: colors.text },
   burmeseTitle: { fontSize: 25, fontFamily: 'NotoSansMyanmar_600SemiBold' },
   subtitle: { fontSize: 13, color: colors.muted, lineHeight: 22, marginTop: 4 },
-  card: { backgroundColor: colors.surface, borderWidth: 0, borderRadius: 22, padding: 20, gap: 14, ...Platform.select({ ios: { shadowColor: '#1c2e24', shadowOpacity: .06, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } }, android: { elevation: 2 }, default: {} }) },
+  card: { backgroundColor: colors.surface, borderWidth: 0, borderRadius: 22, padding: 20, gap: 14, ...Platform.select({ ios: { shadowColor: colors.onAccent, shadowOpacity: .06, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } }, android: { elevation: 2 }, default: {} }) },
   planRow: { flexDirection: 'row', gap: 8 },
   planOption: { flex: 1, minHeight: 56, paddingHorizontal: 8, paddingVertical: 10, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   planHelp: { fontSize: 12, lineHeight: 22, color: colors.link, fontFamily: 'NotoSansMyanmar_600SemiBold' },
@@ -193,8 +193,8 @@ function createStyles(colors: ThemeColors) { return StyleSheet.create({
   input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 52, fontSize: 15, color: colors.text, fontFamily: 'NotoSansMyanmar_400Regular' },
   help: { fontSize: 11, lineHeight: 23, color: colors.muted }, error: { fontSize: 12, lineHeight: 24, color: colors.error },
   errorBox: { backgroundColor: colors.errorBackground, borderWidth: 1, borderColor: colors.errorBorder, borderRadius: 8, padding: 13 },
-  button: { paddingHorizontal: 18, paddingVertical: 13, minHeight: 49, borderRadius: 12, backgroundColor: colors.primary, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
-  secondary: { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.secondaryBorder },
+  button: { borderWidth: 2, borderColor: colors.primary, paddingHorizontal: 18, paddingVertical: 13, minHeight: 49, borderRadius: 12, backgroundColor: colors.primary, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  secondary: { backgroundColor: colors.secondary, borderColor: colors.secondaryBorder },
   buttonText: { color: colors.onPrimary, fontSize: 13, lineHeight: 26, textAlign: 'center', flexShrink: 1 },
   row: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   divider: { height: 1, backgroundColor: colors.divider },

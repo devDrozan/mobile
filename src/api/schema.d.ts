@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/mobile-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getMobileConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/rules": {
         parameters: {
             query?: never;
@@ -191,6 +207,131 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getMobileConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {number} */
+                        schemaVersion: 1;
+                        revision: string;
+                        theme: {
+                            light: {
+                                background?: string;
+                                surface?: string;
+                                surfaceSubtle?: string;
+                                text?: string;
+                                muted?: string;
+                                border?: string;
+                                divider?: string;
+                                primary?: string;
+                                onPrimary?: string;
+                                accent?: string;
+                                onAccent?: string;
+                                brandBackground?: string;
+                                brandText?: string;
+                                secondary?: string;
+                                secondaryBorder?: string;
+                                selected?: string;
+                                selectedBorder?: string;
+                                link?: string;
+                                placeholder?: string;
+                                error?: string;
+                                errorBackground?: string;
+                                errorBorder?: string;
+                                resultBackground?: string;
+                                resultText?: string;
+                                resultMuted?: string;
+                                resultWarning?: string;
+                                switchOn?: string;
+                                switchOff?: string;
+                            };
+                            dark: {
+                                background?: string;
+                                surface?: string;
+                                surfaceSubtle?: string;
+                                text?: string;
+                                muted?: string;
+                                border?: string;
+                                divider?: string;
+                                primary?: string;
+                                onPrimary?: string;
+                                accent?: string;
+                                onAccent?: string;
+                                brandBackground?: string;
+                                brandText?: string;
+                                secondary?: string;
+                                secondaryBorder?: string;
+                                selected?: string;
+                                selectedBorder?: string;
+                                link?: string;
+                                placeholder?: string;
+                                error?: string;
+                                errorBackground?: string;
+                                errorBorder?: string;
+                                resultBackground?: string;
+                                resultText?: string;
+                                resultMuted?: string;
+                                resultWarning?: string;
+                                switchOn?: string;
+                                switchOff?: string;
+                            };
+                        };
+                        carousel: {
+                            id: string;
+                            label: {
+                                en: string;
+                                my: string;
+                            };
+                            title: {
+                                en: string;
+                                my: string;
+                            };
+                            body: {
+                                en: string;
+                                my: string;
+                            };
+                            action: {
+                                en: string;
+                                my: string;
+                            };
+                            route: "/severance" | "/severance/guide" | "/insurance";
+                            color: string;
+                            art: "calculator" | "coins" | "insurance";
+                        }[];
+                        notices: {
+                            id: string;
+                            title: {
+                                en: string;
+                                my: string;
+                            };
+                            body: {
+                                en: string;
+                                my: string;
+                            };
+                        }[];
+                        features: {
+                            carouselVisible: boolean;
+                            carouselAutoplay: boolean;
+                            carouselIntervalMs: number;
+                            noticesVisible: boolean;
+                        };
+                    };
+                };
             };
         };
     };

@@ -1,3 +1,4 @@
+import { useRemoteConfig } from '../../remote-config';
 import { StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Copy, Screen } from '../../components/ui';
@@ -7,6 +8,7 @@ import { ServiceSections } from './ServiceSections';
 import HomeBannerAd from '../../components/HomeBannerAd';
 
 export default function HomeScreen() {
+  const config = useRemoteConfig();
   const { t } = useTranslation();
   const styles = createStyles();
   // Home had no screen-level heading, so returning here announced nothing and
@@ -14,7 +16,7 @@ export default function HomeScreen() {
   const heading = useRouteHeadingFocus();
   return <Screen>
     <Copy ref={heading} accessible accessibilityRole="header" tabIndex={-1} style={styles.visuallyHidden}>{t('hub.home')}</Copy>
-    <HeroCarousel />
+    {config.features.carouselVisible && <HeroCarousel />}
     <ServiceSections />
     <HomeBannerAd />
   </Screen>;

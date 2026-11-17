@@ -8,7 +8,7 @@ export function LaunchScreen({ onLayout }: { onLayout: (event: LayoutChangeEvent
   return <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: colors.background }]} onLayout={onLayout} testID="launch-screen">
     <ScrollView contentContainerStyle={styles.content} bounces={false}>
       <View style={styles.brand}>
-        <Image source={require('../../assets/splash-icon.png')} accessible={false} importantForAccessibility="no" style={styles.logo} resizeMode="contain" />
+        <Image source={require('../../assets/icon.png')} accessible={false} importantForAccessibility="no" style={styles.logo} resizeMode="contain" />
         <Text accessibilityRole="header" style={[styles.name, { color: colors.text }]}>{appConfig.expo.name}</Text>
       </View>
     </ScrollView>
